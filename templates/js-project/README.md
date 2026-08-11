@@ -9,3 +9,6 @@ cp -R templates/js-project my-app
 cd my-app
 npm install
 ```
+
+PR-Agent: set `OPENROUTER__KEY` from `OPENROUTER_KEY_PR_AGENT` in `~/.cursor/secrets.env`
+(`printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY`).
