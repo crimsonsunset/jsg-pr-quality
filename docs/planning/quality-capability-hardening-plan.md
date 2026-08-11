@@ -1,6 +1,6 @@
 # Quality Capability Hardening Plan
 
-**Status:** Done. Phases 1–5 shipped; packages published as `0.1.4` (knip Trusted Publisher + lockstep republish after a broken `0.1.3` knip registry state). Unblocks the `karakeep-instagram-relay` dogfood (hub-extraction Phase 6).
+**Status:** Done. Phases 1–5 shipped at `0.1.4`. Dogfood (hub-extraction Phase 6) ran against `karakeep-instagram-relay`: local `ci:lint`/`ci:test` green; consumer PR deferred. Dogfood forced hub fixes `0.1.6` (unicorn pin / `unopinionated`) and `0.1.7` (knip scripts glob + drop redundant `eslint-config-prettier` from CLI).
 **Last updated:** Aug 11, 2026
 **Scope:** Raise what the hub actually *detects*, as opposed to how well it is assembled. Opens the orchestrator's closed check list, makes type-aware ESLint the default instead of an unused opt-in, gives plain-JS consumers a type-checking path, turns tests and knip into default-on gates (reversing two exclusions from the extraction plan), wires a build gate where one exists, and recalibrates `npm audit` so it stops being permanently red.
 **Related:** [PR Quality Hub Plan](./hub-extraction-plan.md) (built the hub this hardens — its Phase 6 dogfood depends on this work)
@@ -331,7 +331,7 @@ Ordered by bugs caught per unit of noise, which is also the order to add and val
 | `set-times-app/package.json`                                                             | `lint:knip` / `lint:stylelint` / `lint:json` prove the discovery gap; `ci:test` is the precedent for Decision #6 |
 | `jsg-browser-connectors/knip.json`                                                       | Shows which knip fields are genuinely repo-specific (`entry`) versus shared boilerplate   |
 | `jsg-browser-connectors/eslint.config.mjs`                                               | Browser-context config that `eslint-plugin-n` must not misfire on (Decision #11)          |
-| `karakeep-instagram-relay/lib/media-item-runner.util.js`                                 | Concurrent soft-fail enrichment path — the defect class motivating Decision #1            |
+| `karakeep-instagram-relay` (plain-JS Node relay)                                         | Dogfood target (Decision #1). Planned `lib/media-item-runner.util.js` allSettled path is **not in tree today**; unicorn async rules are armed but idle until that code lands |
 | [hub-extraction-plan.md](./hub-extraction-plan.md)                                       | Original scope decisions on knip and tests that Phase 4 and Phase 3 revisit               |
 
 ---
@@ -354,6 +354,14 @@ Ordered by bugs caught per unit of noise, which is also the order to add and val
 ---
 
 ## Progress Log
+
+### 2026-08-11 — Dogfood feedback (karakeep) → hub `0.1.6` / `0.1.7`
+
+- Ran hardened defaults onto `karakeep-instagram-relay` via the skill + CLI. Plain JS, no `--js-typecheck`. Local gates green after consumer overrides
+- **CLI unicorn pin was wrong for Decision #15.** Init wrote `eslint-plugin-unicorn@^56`; `unopinionated` exists only since 61. Result: `Unexpected undefined config at user-defined index 8` and knip's eslint plugin crash. Fixed in `0.1.6`
+- **Node globals gap is intentional, not a bug.** Base scopes `n/*` + `process`/`console` to scripts/bin/`*.mjs` so browser consumers stay clean (Decision #11). A Node service needs a local eslint override for `**/*.{js,mjs,cjs}` — documented in the extraction Phase 6 result, not widened in the shared base
+- **Async defect-class proof incomplete.** Rules `unicorn/no-unsafe-promise-all-settled-values` (and related) are error-level on the relay; the motivating `allSettled` enrichment path / `media-item-runner.util.js` is absent from the current repo
+- `0.1.7`: CLI knip entry uses `scripts/**/*.{js,mjs}`; stop writing `eslint-config-prettier` as a direct consumer dep (already depended on by eslint-config; knip flagged it unused)
 
 ### 2026-08-11 — Phase 5 done
 
@@ -416,3 +424,5 @@ Ordered by bugs caught per unit of noise, which is also the order to add and val
 - **Rule-set shopping is a lower-leverage activity than it feels like.** The audit's finding was never that the wrong rules were picked, it was that good rules were off by default and the orchestrator could not see the checks that existed. That is why the plugin tier is Phase 5 and not Phase 1, despite being the most interesting thing to argue about.
 - **Preset strength is a per-plugin decision, not a global posture.** typescript-eslint lands on `recommended`-tier, unicorn on `unopinionated`, `n` on full `recommended`. Each is the strongest tier that stays free of subjective style rules for that plugin, which is a different point on each plugin's scale.
 - **`karakeep-instagram-relay` stays the dogfood target**, and Decision #1 only reorders it. The dogfood itself is still tracked as Phase 6 of the extraction plan, not duplicated here.
+- **Hub workspace deps can hide consumer peer pins.** The unicorn crash never fired on the hub because the root package.json already had `^73`. External `init` is the real peer-resolution test.
+- **Do not widen Node globals in the shared base to greenwash Node apps.** Decision #11's browser carve-out still matters; Node services layer globals in their own `eslint.config.mjs`.

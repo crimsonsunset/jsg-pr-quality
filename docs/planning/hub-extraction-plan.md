@@ -1,6 +1,6 @@
 # PR Quality Hub Plan
 
-**Status:** Phases 1–5 built and merged; `v1` tagged. All five `@crimsonsunset/*` packages published to npm at `0.1.0`. Phase 6 (dogfood) not started.
+**Status:** Phases 1–5 built and merged; `v1` tagged. Packages at `0.1.7` (hardening, unicorn pin fix, knip/scripts + CLI dep cleanup). Phase 6 dogfood retargeted to `karakeep-instagram-relay` (hardening Decision #1): local adopt + `ci:lint`/`ci:test` green; consumer PR deferred.
 **Last updated:** Aug 11, 2026
 **Scope:** Turn the PR quality flow already proven in `jsg-browser-connectors` (Phases 1–5 of its own plan) into a reusable `crimsonsunset/jsg-pr-quality` hub: a `workflow_call` reusable workflow for CI orchestration, a set of shareable `@crimsonsunset/*` npm config packages for baseline lint/format/type rules, a CLI init script that writes all of it into a target repo, an in-repo template folder for greenfield bootstrap, and a Cursor skill that walks an agent through retrofitting an existing repo onto all of it.
 **Related:** [PR Quality Flow Plan](https://github.com/crimsonsunset/jsg-browser-connectors/blob/feature/pr-quality-flow/docs/planning/pr-quality-flow-plan.md) (the in-repo build this hub extracts from — see its Phase 6)
@@ -15,7 +15,7 @@ Several things get built, not one, because the user wants all of it: a `workflow
 
 The skill doesn't hand-write every file itself, though. A `packages/cli` init script (`@crimsonsunset/pr-quality-cli`) does the mechanical part — writing config stubs, adding devDeps, writing the caller workflow YAML — deterministically and idempotently. The skill's job shrinks to what actually needs judgment: detecting what's already there, deciding what to remove, resolving repo-specific conflicts, then calling the script for the boilerplate. Scripted file writes are testable in isolation; an agent free-handing the same edits via its own judgment every single time is slower and more error-prone for pure boilerplate.
 
-`jsg-browser-connectors` becomes the hub's first real caller, and that dogfood runs **last** (Phase 6) — everything the hub ships gets built first, then a real repo proves it. Proving the skill against a second, previously-untouched repo is deferred out of this plan; the skill ships authored but unexercised.
+Dogfood runs **last** (Phase 6). Hardening Decision #1 retargeted it to `karakeep-instagram-relay` (plain-JS Node service) so the hardened lint defaults get a real defect-class workout; `jsg-browser-connectors` stays a later thin-caller migration. The skill has been exercised on karakeep's empty quality stack; a messier teardown target remains useful later.
 
 ---
 
@@ -45,7 +45,7 @@ Phase 4: templates/ts-project/ folder — greenfield path
   ↓
 Phase 5: rip-and-replace-ci-quality skill, authored in-repo
   ↓
-Phase 6: jsg-browser-connectors converted to thin caller via the CLI — dogfood, runs last
+Phase 6: dogfood — retargeted to karakeep-instagram-relay (hardening Decision #1); jsg-browser-connectors remains a later caller
 ```
 
 ---
@@ -307,7 +307,7 @@ Roughly half a day.
 
 ---
 
-### Phase 5: `rip-and-replace-ci-quality` skill — **authored, unexercised**
+### Phase 5: `rip-and-replace-ci-quality` skill — **authored; exercised on Phase 6 dogfood**
 
 Roughly half a day to author.
 
@@ -316,22 +316,26 @@ Roughly half a day to author.
 
 **Outcome:** An agent has a written teardown-then-init procedure instead of free-handing config edits per repo.
 
-**Result:** Written and symlinked. Proving it against a second, previously-untouched repo is deferred out of this plan — Phase 6 is agent-guided on a repo whose setup is already known, so it validates the hub and CLI but not the skill's teardown judgment.
+**Result:** Written and symlinked. Phase 6 ran the skill against `karakeep-instagram-relay` (no prior lint/CI), which exercises teardown judgment on a near-empty quality stack. A second, messier retrofit (e.g. `jsg-browser-connectors` with real overrides) is still useful later.
 
 ---
 
-### Phase 6: `jsg-browser-connectors` becomes the hub's first caller — **not started**
+### Phase 6: `karakeep-instagram-relay` dogfood — **local green; consumer PR deferred**
 
-Roughly half a day. Runs last, on purpose.
+Retargeted from `jsg-browser-connectors` by [hardening Decision #1](./quality-capability-hardening-plan.md). Roughly half a day. Runs last, on purpose.
 
-- Run `npx @crimsonsunset/pr-quality-cli init` inside `jsg-browser-connectors` to write the thin caller workflows and config stubs
-- Hand-add back the repo-specific overrides the CLI can't know about: the alias-import restriction and OpenCLI-globals exception in `eslint.config.mjs`
-- Open a real PR, confirm the sticky report, reviewdog annotations, and PR-Agent review all fire identically to before the swap
-- Update the source plan's Phase 6 status to done, linking here
+- Run `npx @crimsonsunset/pr-quality-cli init` (plain JS, no `--js-typecheck`) to write thin callers `@v1`, eslint base, knip, cspell, prettier, `ci:lint` / `ci:test`
+- Layer repo overrides: Node globals for `**/*.{js,mjs,cjs}` (hub scopes `n/*` to scripts/bin so browser consumers stay clean), knip `scripts/**/*.{js,mjs}`, cspell vocabulary
+- Local verify: `format:check`, `lint:eslint`, `ci:lint`, `ci:test` ("none found")
+- Open a real PR for sticky report + reviewdog + security scans — **deferred** (local tree ready; no commit/push to that repo yet)
+- `jsg-browser-connectors` remains a later thin-caller migration (alias-import + OpenCLI globals overrides), not this phase's dogfood
 
-**Outcome:** `jsg-browser-connectors` has ~10-line workflow files and config files that are mostly one-line extends, produced by the CLI rather than hand-written, and a real PR proves the externally-hosted hub matches the in-repo version it replaced.
+**Outcome (so far):** CLI + skill path proven on an untouched plain-JS Node service. Hardened unicorn async rules are armed (`no-unsafe-promise-all-settled-values` et al. at error). Current `karakeep` tree has no `allSettled` / `media-item-runner.util.js` paths, so that defect class is not exercised yet. Sticky-report proof waits on the consumer PR.
 
-**Blocked on:** the config packages being published, since the CLI adds them as devDeps and the repo's `npm ci` would fail on unresolvable dependencies. The workflow half could go first on its own if the config swap is deferred.
+**Hub bugs found and fixed during dogfood:**
+- CLI pinned `eslint-plugin-unicorn@^56` but `configs.unopinionated` needs `>=61` → flat-config `undefined` slot crashed ESLint + knip. Fixed in `0.1.6` (CLI `^73`, peer `>=61`, fail-fast guard).
+- CLI re-added `eslint-config-prettier` as a direct consumer dep even though `@crimsonsunset/eslint-config` already depends on it → knip unused-dep noise. Dropped from CLI init in `0.1.7`.
+- Knip entry derivation only globbed `scripts/**/*.mjs`; plain-JS repos use `scripts/**/*.js`. Widened in `0.1.7`.
 
 ---
 
@@ -369,6 +373,14 @@ Roughly half a day. Runs last, on purpose.
 - Decisions locked: all three approaches (reusable workflow, config packages, template repo) plus a rip-and-replace skill, `jsg-browser-connectors` as first caller before any other repo, `v1` tag pinning, public npm scope
 - Added a `pr-quality-cli init` script (Phase 3) after the user asked for something that "moves things into place" — the skill now drives the CLI for mechanical writes instead of hand-editing every config file itself; renumbered Phases 3–5 to 4–6 accordingly
 
+### 2026-08-11 — Phase 6 dogfood (karakeep) local green; hub `0.1.6`/`0.1.7`
+
+- Hardening Decision #1 retargeted Phase 6 dogfood to `karakeep-instagram-relay` (plain-JS Node relay). Ran `rip-and-replace-ci-quality` + `pr-quality-cli@0.1.4` init; no prior lint/CI to tear down
+- First `eslint`/`knip` run crashed: CLI had pinned `eslint-plugin-unicorn@^56` while the base imports `unicorn.configs.unopinionated` (since unicorn 61). Shipped `0.1.6` (CLI `^73`, peer `>=61`, fail-fast). Publish green
+- Follow-up `0.1.7`: stop writing redundant `eslint-config-prettier` direct dep; knip entry includes `scripts/**/*.{js,mjs}`
+- Local karakeep verify green after overrides (Node globals for app `*.js`, cspell vocab, knip cleanup). Consumer PR deferred on purpose. Unicorn async rules armed; no `allSettled` / `media-item-runner.util.js` in that tree today
+- `jsg-browser-connectors` thin-caller migration is still outstanding (separate from this dogfood)
+
 ### 2026-08-11 — Phases 1–5 built, `v1` tagged
 
 - Reordered the phases so the dogfood runs last: workflows → configs → CLI → template folder → skill → dogfood. The template became an in-repo folder and the skill moved in-repo, both at the user's direction (Decisions #7, #8)
@@ -391,5 +403,6 @@ Roughly half a day. Runs last, on purpose.
 - **First publish under a new npm scope has no token shortcut.** npm's 2FA-bypass GAT changes ([Jul 2026](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)) make this permanent policy, not a temporary quirk — plan for an interactive OTP approval on any brand-new scoped package going forward, then move to OIDC trusted publishing (already wired in `publish.yml`) for every publish after the first.
 - **The config packages must stay thin.** The moment one of them tries to be a complete, non-extendable config, the first repo with a real exception (OpenCLI's `.main.js` globals, `sites/*/opencli/**` ignores) forces a fork instead of an override. Decision #6 exists specifically to prevent that.
 - **`self-test.on-pr.yml` calling the hub's own reusable workflow is the cheapest possible integration test.** No separate consumer repo is needed to catch a broken `workflow_call` input/output wiring — it fails on the hub's own next PR.
-- **Phase 6's agent-guided CLI run does not validate the skill.** The dogfood proves the hub and CLI work on a repo whose quirks are already understood. Proving the *skill* needs a repo where nobody has pre-decided what to tear out, which is deliberately deferred.
+- **Phase 6 on karakeep did exercise the skill's empty-stack path.** Teardown was a no-op (nothing superseding), which is still a real skill branch. A messy retrofit with conflicting ESLint/workflows (e.g. `jsg-browser-connectors`) remains the better teardown-judgment proof.
+- **Dogfood is allowed to break the hub.** The unicorn pin bug only showed up on a plain-JS consumer install; the hub's own workspace already had unicorn 73. Treat the first external adopt as a publish-path test, not only a workflow test.
 - **The CLI has to stay dumber than the skill on purpose.** If `pr-quality-cli init` starts trying to guess which existing config is safe to delete, it becomes a second, less-capable copy of the skill's judgment logic. Keeping it additive-only (Decision #12) is what makes it safe to run blind.

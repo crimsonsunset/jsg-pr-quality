@@ -40,7 +40,7 @@ export function deriveKnipEntry(pkg, cwd) {
   collectExportPaths(pkg.exports, entries);
 
   if (fs.existsSync(path.join(cwd, 'scripts'))) {
-    entries.add('scripts/**/*.mjs');
+    entries.add('scripts/**/*.{js,mjs}');
   }
 
   for (const candidate of [

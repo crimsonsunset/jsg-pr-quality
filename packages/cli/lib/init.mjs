@@ -14,7 +14,8 @@ const BASE_DEV_DEPS = {
   '@crimsonsunset/knip-config': '^0.1.0',
   '@eslint/js': '^10.0.0',
   eslint: '^10.0.0',
-  'eslint-config-prettier': '^10.0.0',
+  // eslint-config-prettier is a dependency of @crimsonsunset/eslint-config — do
+  // not re-add it here; knip flags the direct consumer copy as unused.
   'eslint-plugin-import-x': '^4.0.0',
   'eslint-plugin-n': '^17.0.0',
   // unopinionated preset exists only since unicorn 61; hub validates on ^73.

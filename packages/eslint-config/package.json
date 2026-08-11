@@ -1,6 +1,6 @@
 {
   "name": "@crimsonsunset/eslint-config",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Shared ESLint flat config base for crimsonsunset TypeScript repos",
   "type": "module",
   "main": "index.mjs",
