@@ -93,7 +93,10 @@ Fix failures before opening a PR. Do not weaken shared rules to paper over real 
 
 1. Ensure `OPENROUTER__KEY` exists if using `review.on-pr.yml`
 2. Confirm hub tag `v1` exists on `crimsonsunset/jsg-pr-quality` (callers pin to it)
-3. Open a PR and confirm the sticky quality report + reviewdog annotations fire
+3. Confirm each caller workflow kept its `permissions` block — a called workflow
+   can only narrow the caller's token, so a caller missing `pull-requests: write`
+   fails at startup with `but is only allowed 'pull-requests: none'`
+4. Open a PR and confirm the sticky quality report + reviewdog annotations fire
 
 ## Hard rules
 

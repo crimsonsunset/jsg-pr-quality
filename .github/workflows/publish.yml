@@ -1,0 +1,36 @@
+name: Publish Packages
+
+# Semver tags only (v0.1.0). Bare Actions tags like v1 do NOT trigger this —
+# those are for workflow_call consumers, not npm.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      # --workspaces publishes every non-private workspace, so the package list
+      # lives only in package.json. Auth is OIDC; no NPM_TOKEN.
+      - name: Publish workspace packages
+        run: npm publish --workspaces --access public
