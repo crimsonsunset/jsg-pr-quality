@@ -1,6 +1,6 @@
 # PR Quality Hub Plan
 
-**Status:** Phases 1–5 built and merged; `v1` tagged. Phase 6 (dogfood) not started. npm publish blocked on 2FA.
+**Status:** Phases 1–5 built and merged; `v1` tagged. All five `@crimsonsunset/*` packages published to npm at `0.1.0`. Phase 6 (dogfood) not started.
 **Last updated:** Aug 11, 2026
 **Scope:** Turn the PR quality flow already proven in `jsg-browser-connectors` (Phases 1–5 of its own plan) into a reusable `crimsonsunset/jsg-pr-quality` hub: a `workflow_call` reusable workflow for CI orchestration, a set of shareable `@crimsonsunset/*` npm config packages for baseline lint/format/type rules, a CLI init script that writes all of it into a target repo, an in-repo template folder for greenfield bootstrap, and a Cursor skill that walks an agent through retrofitting an existing repo onto all of it.
 **Related:** [PR Quality Flow Plan](https://github.com/crimsonsunset/jsg-browser-connectors/blob/feature/pr-quality-flow/docs/planning/pr-quality-flow-plan.md) (the in-repo build this hub extracts from — see its Phase 6)
@@ -262,7 +262,7 @@ Roughly one day.
 
 ---
 
-### Phase 2: Shareable config packages — **built, publish blocked**
+### Phase 2: Shareable config packages — **done, published**
 
 Roughly half a day.
 
@@ -275,11 +275,11 @@ Roughly half a day.
 
 **Outcome:** Four public `@crimsonsunset/*` packages exist on npm, installable independently of the hub's CI workflow.
 
-**Result:** All four packages are written and the hub lints itself with them, since npm workspaces resolve them locally without a registry. The npm publish itself is blocked on a 2FA security key that won't authenticate; nothing in the hub depends on it, but the greenfield template and any CLI run against a real repo do.
+**Result:** All four packages are written, the hub lints itself with them via npm workspaces, and all four are published to npm at `0.1.0`. The publish itself was blocked for a while on npm's 2FA-bypass GAT restrictions ([GH changelog, Jul 2026](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)) which now require an interactive browser OTP approval for a first publish under a scope — no token-based workaround. Ran `npm publish --workspaces --access public` interactively from a machine with working 2FA to clear it.
 
 ---
 
-### Phase 3: `pr-quality-cli` init script — **built, publish blocked**
+### Phase 3: `pr-quality-cli` init script — **done, published**
 
 Roughly half a day.
 
@@ -291,7 +291,7 @@ Roughly half a day.
 
 **Outcome:** `npx @crimsonsunset/pr-quality-cli init` run inside an empty scratch project produces working config files and caller workflows without any manual editing.
 
-**Result:** Verified against a scratch directory in `/tmp`. The caller workflows it writes carry the `permissions` block added in Decision #15.
+**Result:** Verified against a scratch directory in `/tmp`, and again post-publish via `npx --yes @crimsonsunset/pr-quality-cli --help` against the real registry package. The caller workflows it writes carry the `permissions` block added in Decision #15. Publish surfaced a real bug: the `bin` field had a leading `./` (`"./bin/pr-quality.mjs"`), which npm silently strips per [npm/cli#7302](https://github.com/npm/cli/issues/7302) — would have broken the `pr-quality` binary for every installer. Fixed by dropping the `./` prefix.
 
 ---
 
@@ -379,7 +379,8 @@ Roughly half a day. Runs last, on purpose.
 - **The hub's first self-test run failed at startup**, which is exactly what Phase 1 existed to catch. Root cause: a called workflow can only narrow the caller's `GITHUB_TOKEN`, and the caller had no `permissions` block, so `pull-requests: write` resolved against a repo default of `pull-requests: none`. The same gap was in both CLI templates and both template-folder workflows, so every future adopter would have hit it (Decision #15)
 - Worth noting `actionlint` passed clean on all five workflow files both before and after that bug, and GitHub exposes nothing about startup failures through its REST API — the error text only exists in the run page's HTML
 - Second run green: all five jobs ran and the sticky report rendered the real `ci:lint` summary. Tagged `v1` at that commit
-- **Blocked:** npm publish, on a 2FA security key that won't authenticate. Phase 6 needs the packages published; the hub itself does not
+- **npm publish was blocked**, then cleared. A local security key wouldn't authenticate; separately, npm's Jul 2026 [2FA-bypass GAT deprecation](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/) confirmed there was never going to be a token-based way around a first publish under a scope — it requires an interactive browser OTP approval, no exceptions. Ran the publish from another machine with working 2FA (`rohan`, same `~/Desktop/Repos/Personal/` layout) and cleared the OTP prompt there. All five `@crimsonsunset/*` packages are live on npm at `0.1.0`, verified via `npm view` and a real `npx @crimsonsunset/pr-quality-cli --help` run
+- That publish also caught the `bin` field bug noted in Phase 3 (leading `./`) — fixed and re-verified via `npm publish --dry-run` before landing
 
 ---
 
@@ -387,7 +388,8 @@ Roughly half a day. Runs last, on purpose.
 
 - **Everything in "Files to create" now exists.** The tables are kept as a map of the hub rather than a to-do list.
 - **The self-test earned its keep on the very first run.** It caught a caller-permissions bug that `actionlint` cannot see and that would have broken every adopting repo, not just this one. That is the entire argument for Phase 1 existing before any external consumer.
-- **Publishing and the workflows are independent.** The hub lints itself with the unpublished config packages because npm workspaces resolve them locally. Only consumers outside this repo need the registry, which is why the npm 2FA block doesn't stall the hub's own development.
+- **Publishing and the workflows are independent.** The hub lints itself with the config packages via npm workspaces resolving them locally, regardless of registry state — that's why the npm 2FA block never stalled the hub's own development, only Phase 6.
+- **First publish under a new npm scope has no token shortcut.** npm's 2FA-bypass GAT changes ([Jul 2026](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)) make this permanent policy, not a temporary quirk — plan for an interactive OTP approval on any brand-new scoped package going forward, then move to OIDC trusted publishing (already wired in `publish.yml`) for every publish after the first.
 - **The config packages must stay thin.** The moment one of them tries to be a complete, non-extendable config, the first repo with a real exception (OpenCLI's `.main.js` globals, `sites/*/opencli/**` ignores) forces a fork instead of an override. Decision #6 exists specifically to prevent that.
 - **`self-test.on-pr.yml` calling the hub's own reusable workflow is the cheapest possible integration test.** No separate consumer repo is needed to catch a broken `workflow_call` input/output wiring — it fails on the hub's own next PR.
 - **Phase 6's agent-guided CLI run does not validate the skill.** The dogfood proves the hub and CLI work on a repo whose quirks are already understood. Proving the *skill* needs a repo where nobody has pre-decided what to tear out, which is deliberately deferred.
