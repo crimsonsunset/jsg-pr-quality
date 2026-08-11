@@ -5,6 +5,12 @@ import nodePlugin from 'eslint-plugin-n';
 import unicorn from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 
+if (!unicorn.configs?.unopinionated) {
+  throw new Error(
+    '@crimsonsunset/eslint-config requires eslint-plugin-unicorn >=61 (configs.unopinionated). CLI init pins ^73.',
+  );
+}
+
 const NODE_FILES = [
   'scripts/**/*.{js,mjs,cjs,ts,mts,cts}',
   'bin/**/*.{js,mjs,cjs,ts,mts,cts}',

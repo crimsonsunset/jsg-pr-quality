@@ -1,6 +1,6 @@
 {
   "name": "@crimsonsunset/knip-config",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Shared knip project/ignore defaults for crimsonsunset repos (entry is per-repo)",
   "type": "module",
   "main": "index.mjs",

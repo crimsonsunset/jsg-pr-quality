@@ -17,7 +17,8 @@ const BASE_DEV_DEPS = {
   'eslint-config-prettier': '^10.0.0',
   'eslint-plugin-import-x': '^4.0.0',
   'eslint-plugin-n': '^17.0.0',
-  'eslint-plugin-unicorn': '^56.0.0',
+  // unopinionated preset exists only since unicorn 61; hub validates on ^73.
+  'eslint-plugin-unicorn': '^73.0.0',
   prettier: '^3.0.0',
   // typescript-eslint's tseslint.config() wrapper is used by the eslint config
   // template regardless of TS usage — it's a plain flat-config array composer.

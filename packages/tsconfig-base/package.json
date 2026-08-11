@@ -1,6 +1,6 @@
 {
   "name": "@crimsonsunset/tsconfig-base",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Shared strict TypeScript base config for crimsonsunset repos",
   "main": "tsconfig.base.json",
   "exports": {
