@@ -1,0 +1,18 @@
+name: PR Quality Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    uses: crimsonsunset/jsg-pr-quality/.github/workflows/quality.reusable.yml@v1
+    with:
+      node-version: '22'
+      package-manager: npm
+      lint-script: ci:lint
+      eslint-flags: src

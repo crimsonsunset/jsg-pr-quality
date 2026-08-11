@@ -1,0 +1,32 @@
+{
+  "name": "my-ts-project",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "lint:eslint": "eslint .",
+    "lint:tsc": "tsc --noEmit",
+    "lint:cspell": "cspell \"**/*.{ts,mjs,md,json}\" --no-progress",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "ci:lint": "node scripts/ci/lint.script.mjs"
+  },
+  "prettier": "@crimsonsunset/prettier-config",
+  "devDependencies": {
+    "@crimsonsunset/cspell-config": "^0.1.0",
+    "@crimsonsunset/eslint-config": "^0.1.0",
+    "@crimsonsunset/prettier-config": "^0.1.0",
+    "@crimsonsunset/tsconfig-base": "^0.1.0",
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^22.0.0",
+    "cspell": "^10.0.0",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}

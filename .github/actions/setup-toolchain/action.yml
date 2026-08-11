@@ -1,0 +1,41 @@
+name: Setup Toolchain
+description: >
+  Sets up Node (and pnpm when requested), then installs dependencies with the
+  matching package manager. Run after checkout.
+
+inputs:
+  node-version:
+    description: Node.js version
+    required: false
+    default: '22'
+  package-manager:
+    description: Package manager to use (npm or pnpm)
+    required: false
+    default: npm
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      if: inputs.package-manager == 'pnpm'
+      uses: pnpm/action-setup@v5
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.package-manager }}
+
+    - name: Install dependencies (npm)
+      if: inputs.package-manager == 'npm'
+      shell: bash
+      env:
+        HUSKY: '0'
+      run: npm ci
+
+    - name: Install dependencies (pnpm)
+      if: inputs.package-manager == 'pnpm'
+      shell: bash
+      env:
+        HUSKY: '0'
+      run: pnpm install --frozen-lockfile

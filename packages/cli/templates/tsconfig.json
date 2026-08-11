@@ -1,0 +1,9 @@
+{
+  "extends": "@crimsonsunset/tsconfig-base/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

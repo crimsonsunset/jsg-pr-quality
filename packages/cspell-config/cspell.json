@@ -1,0 +1,40 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "bugbot",
+    "byok",
+    "crimsonsunset",
+    "cspell",
+    "gitleaks",
+    "knip",
+    "marocchino",
+    "openrouter",
+    "pragent",
+    "reviewdog",
+    "semgrep",
+    "tseslint",
+    "typecheck"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "docs/planning/**",
+    ".cursor/**",
+    "*.log"
+  ],
+  "dictionaries": [
+    "typescript",
+    "node",
+    "npm",
+    "html",
+    "css",
+    "bash",
+    "filetypes",
+    "softwareTerms",
+    "companies"
+  ]
+}

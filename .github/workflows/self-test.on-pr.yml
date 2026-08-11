@@ -1,0 +1,22 @@
+name: Hub Self-Test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: self-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    uses: ./.github/workflows/quality.reusable.yml
+    with:
+      node-version: '22'
+      package-manager: npm
+      lint-script: ci:lint
+      eslint-flags: packages scripts
+      run-reviewdog: true
+
+  # Review job needs OPENROUTER__KEY; skip self-test of that path until the
+  # secret is present on this repo. Callers wire review.reusable.yml themselves.

@@ -1,0 +1,28 @@
+{
+  "name": "jsg-pr-quality",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable PR quality workflows, shareable lint/format configs, and adoption tooling",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "ci:lint": "node scripts/ci/lint.script.mjs",
+    "lint:eslint": "eslint packages scripts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@crimsonsunset/eslint-config": "*",
+    "@crimsonsunset/prettier-config": "*",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
+    "typescript-eslint": "^8.46.0"
+  }
+}

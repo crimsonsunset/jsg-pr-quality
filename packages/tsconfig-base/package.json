@@ -1,0 +1,17 @@
+{
+  "name": "@crimsonsunset/tsconfig-base",
+  "version": "0.1.0",
+  "description": "Shared strict TypeScript base config for crimsonsunset repos",
+  "main": "tsconfig.base.json",
+  "exports": {
+    ".": "./tsconfig.base.json",
+    "./tsconfig.base.json": "./tsconfig.base.json"
+  },
+  "files": [
+    "tsconfig.base.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}

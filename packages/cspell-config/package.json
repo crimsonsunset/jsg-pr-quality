@@ -1,0 +1,17 @@
+{
+  "name": "@crimsonsunset/cspell-config",
+  "version": "0.1.0",
+  "description": "Shared cspell dictionary base for crimsonsunset repos",
+  "main": "cspell.json",
+  "exports": {
+    ".": "./cspell.json",
+    "./cspell.json": "./cspell.json"
+  },
+  "files": [
+    "cspell.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}

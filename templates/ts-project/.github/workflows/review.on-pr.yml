@@ -1,0 +1,13 @@
+name: PR Agent Review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    uses: crimsonsunset/jsg-pr-quality/.github/workflows/review.reusable.yml@v1
+    secrets:
+      openrouter-key: ${{ secrets.OPENROUTER__KEY }}
