@@ -1,8 +1,8 @@
 # PR Quality Hub Plan
 
-**Status:** Planned — not started
-**Last updated:** Aug 10, 2026
-**Scope:** Turn the PR quality flow already proven in `jsg-browser-connectors` (Phases 1–5 of its own plan) into a reusable `crimsonsunset/jsg-pr-quality` hub: a `workflow_call` reusable workflow for CI orchestration, a set of shareable `@crimsonsunset/*` npm config packages for baseline lint/format/type rules, a CLI init script that writes all of it into a target repo, a GitHub template repo for greenfield bootstrap, and a Cursor skill that walks an agent through retrofitting an existing repo onto all of it.
+**Status:** Phases 1–5 built and merged; `v1` tagged. Phase 6 (dogfood) not started. npm publish blocked on 2FA.
+**Last updated:** Aug 11, 2026
+**Scope:** Turn the PR quality flow already proven in `jsg-browser-connectors` (Phases 1–5 of its own plan) into a reusable `crimsonsunset/jsg-pr-quality` hub: a `workflow_call` reusable workflow for CI orchestration, a set of shareable `@crimsonsunset/*` npm config packages for baseline lint/format/type rules, a CLI init script that writes all of it into a target repo, an in-repo template folder for greenfield bootstrap, and a Cursor skill that walks an agent through retrofitting an existing repo onto all of it.
 **Related:** [PR Quality Flow Plan](https://github.com/crimsonsunset/jsg-browser-connectors/blob/feature/pr-quality-flow/docs/planning/pr-quality-flow-plan.md) (the in-repo build this hub extracts from — see its Phase 6)
 
 ---
@@ -11,23 +11,23 @@
 
 `jsg-browser-connectors` already runs the full flow: deterministic gates via an orchestrator script, a sticky PR comment, Semgrep/gitleaks/audit, and PR-Agent for AI review. That repo is the reference implementation, not a throwaway. This plan copies its working pieces out into a public hub other repos can point at.
 
-Several things get built, not one, because the user wants all of it: a `workflow_call` hub for the CI plumbing, `@crimsonsunset/eslint-config` / `prettier-config` / `cspell-config` / `tsconfig-base` npm packages so "baseline lint and other quality rails" travel with the hub instead of being copy-pasted, and a `crimsonsunset/ts-project-template` repo for starting something new. A Cursor skill named `rip-and-replace-ci-quality` exists because dropping a README on someone doesn't retrofit an existing repo; an agent needs a repeatable procedure for tearing out ad-hoc lint/CI config and wiring in the shared one.
+Several things get built, not one, because the user wants all of it: a `workflow_call` hub for the CI plumbing, `@crimsonsunset/eslint-config` / `prettier-config` / `cspell-config` / `tsconfig-base` npm packages so "baseline lint and other quality rails" travel with the hub instead of being copy-pasted, and a `templates/ts-project/` folder for starting something new. A Cursor skill named `rip-and-replace-ci-quality` exists because dropping a README on someone doesn't retrofit an existing repo; an agent needs a repeatable procedure for tearing out ad-hoc lint/CI config and wiring in the shared one.
 
 The skill doesn't hand-write every file itself, though. A `packages/cli` init script (`@crimsonsunset/pr-quality-cli`) does the mechanical part — writing config stubs, adding devDeps, writing the caller workflow YAML — deterministically and idempotently. The skill's job shrinks to what actually needs judgment: detecting what's already there, deciding what to remove, resolving repo-specific conflicts, then calling the script for the boilerplate. Scripted file writes are testable in isolation; an agent free-handing the same edits via its own judgment every single time is slower and more error-prone for pure boilerplate.
 
-`jsg-browser-connectors` becomes the hub's first real caller (Phase 4) before anything else adopts it. The skill then gets proven against a second, previously-untouched repo (Phase 6) so "it works because I hand-migrated it" isn't the only evidence.
+`jsg-browser-connectors` becomes the hub's first real caller, and that dogfood runs **last** (Phase 6) — everything the hub ships gets built first, then a real repo proves it. Proving the skill against a second, previously-untouched repo is deferred out of this plan; the skill ships authored but unexercised.
 
 ---
 
 ## Overview
 
-**What this is:** A public `crimsonsunset/jsg-pr-quality` repo hosting a reusable CI workflow, four shareable config packages, a CLI init script, and an adoption skill — plus a separate `crimsonsunset/ts-project-template` repo for new projects.
+**What this is:** A public `crimsonsunset/jsg-pr-quality` repo hosting a reusable CI workflow, four shareable config packages, a CLI init script, a greenfield template folder, and an adoption skill — all in one repo.
 
 **What this is NOT:**
 
 - **Not a redesign of the flow itself** — the gate set (ESLint, `tsc`, build, Knip, cspell, Semgrep, gitleaks, `npm audit`, PR-Agent) and the sticky-report pattern are already decided and working in `jsg-browser-connectors`. This plan extracts and parameterizes, it doesn't re-litigate.
 - **Not a codemod that rewrites application logic** — the CLI script only ever touches config files, `package.json` scripts/devDeps, and `.github/workflows/*.yml`. It never touches `shared/`, `sites/`, or any repo's actual source.
-- **Not a full-fleet migration** — only `jsg-browser-connectors` (dogfood #1, hand-migrated) and one guinea-pig repo (dogfood #2, skill-migrated) move onto the hub in this plan. Every other personal repo adopts later, on demand, by running the skill.
+- **Not a full-fleet migration** — only `jsg-browser-connectors` moves onto the hub in this plan. Every other personal repo adopts later, on demand, by running the skill.
 - **Not a shared `knip.json`** — Knip needs explicit per-repo entry points (dynamically-loaded adapters, CLI mains) or it reports the whole surface as unused. That config stays local to each repo, same as it already is in `jsg-browser-connectors`.
 - **Not test/coverage tooling** — `set-times-app`'s `ci:test` job stays local. No test runner is being standardized here.
 - **Not a monorepo/Turbo adoption** — same reasoning as the source plan: full-repo checks are fast enough that changed-file scoping is overhead, not a fix.
@@ -42,11 +42,11 @@ Phase 2: @crimsonsunset/* config packages (npm workspaces, published)
   ↓
 Phase 3: pr-quality-cli init script (writes packages + workflows into a target repo)
   ↓
-Phase 4: jsg-browser-connectors converted to thin caller via the CLI — dogfood #1
+Phase 4: templates/ts-project/ folder — greenfield path
   ↓
-Phase 5: crimsonsunset/ts-project-template — greenfield path
+Phase 5: rip-and-replace-ci-quality skill, authored in-repo
   ↓
-Phase 6: rip-and-replace-ci-quality skill, proven against a second repo — dogfood #2
+Phase 6: jsg-browser-connectors converted to thin caller via the CLI — dogfood, runs last
 ```
 
 ---
@@ -61,12 +61,15 @@ Phase 6: rip-and-replace-ci-quality skill, proven against a second repo — dogf
 | 4   | Build `@crimsonsunset/eslint-config`, `prettier-config`, `cspell-config`, `tsconfig-base` as npm workspaces inside this same repo | User explicitly asked for "baseline lint and other quality rails" to come along for the ride. One repo versioning hub + configs together avoids coordinating releases across two repos for every change.        |
 | 5   | Config packages publish to npm as public scoped packages (`npm publish --access public`)                                     | First publish under an unused scope (`@crimsonsunset`) defaults to private, which requires a paid npm plan. `--access public` keeps it free and matches the hub's own public visibility.                         |
 | 6   | Config packages are thin, extendable exports — each repo keeps its own `eslint.config.mjs`/`tsconfig.json` that imports the shared base and layers repo-specific overrides on top | `jsg-browser-connectors` already needs its own overrides (alias-only imports, OpenCLI globals for bundled plugins). A single opaque "extends and you can't touch it" config would force a fork on day one.       |
-| 7   | Also build `crimsonsunset/ts-project-template`, a separate public repo marked as a GitHub template, wired to the hub + config packages | User: "i want it all" — covers greenfield bootstrap, which the hub workflow and config packages alone don't solve (there's still no starter `package.json`/`eslint.config.mjs` to copy from).                    |
-| 8   | Write a Cursor skill, `rip-and-replace-ci-quality`, to guide an agent through migrating an *existing* repo onto the hub        | Explicit user ask. Existing repos have ad-hoc lint/CI config that needs systematic removal (old devDeps, old config files, old workflow YAML), not just a README to read.                                        |
-| 9   | `jsg-browser-connectors` is the hub's first caller, hand-migrated, before any other repo touches it                           | Dogfooding — proves the reusable workflow produces the same sticky report/reviewdog/PR-Agent behavior it's replacing, on the repo that already has real PR history to compare against.                          |
+| 7   | Ship the greenfield starter as a `templates/ts-project/` folder in this repo, not a separate `crimsonsunset/ts-project-template` GitHub template repo | User: "no new repo just put it here in a folder." A folder versions with the hub, so a workflow input change and the template that uses it move in one commit — a separate repo would need its own release coordination for every hub change. Cost is losing GitHub's "Use this template" button; `cp -R` covers it. |
+| 8   | Write a Cursor skill, `rip-and-replace-ci-quality`, authored in this repo and symlinked into `~/.cursor/skills/`               | Explicit user ask. Existing repos have ad-hoc lint/CI config that needs systematic removal (old devDeps, old config files, old workflow YAML), not just a README to read. Living in-repo keeps it versioned alongside the CLI it drives. |
+| 9   | `jsg-browser-connectors` is the hub's dogfood, and it runs **last**, after everything else is built                            | Dogfooding proves the reusable workflow produces the same sticky report/reviewdog/PR-Agent behavior it's replacing, on the repo with real PR history to compare against. Running it last means the CLI, template, and skill are all available to exercise during the migration rather than being written afterward. |
 | 10  | Tag the hub `v1`; every caller pins to the tag, never `@main`                                                                 | Same supply-chain logic already applied to third-party actions in `jsg-browser-connectors` (pinned to SHAs). Once other repos depend on this hub, an unpinned `@main` caller is exactly the risk that was just fixed elsewhere. |
 | 11  | Add a `packages/cli` init script (`@crimsonsunset/pr-quality-cli`) that writes config stubs, devDeps, and caller workflow YAML into a target repo; the skill calls it instead of hand-writing those files itself | User asked for "a script that moves things into place." Deterministic file writes are testable and idempotent on their own; leaving pure boilerplate to an agent's per-run judgment is slower and more error-prone than it needs to be. |
 | 12  | The CLI is additive-only by default (skips files that already exist, `--force` to overwrite) and never touches application source, only config/`package.json`/`.github/workflows/*.yml` | Removing old, conflicting config is a judgment call (does this repo's ESLint override matter, is this workflow file safe to replace) — that stays with the skill, not the script, so the script can't destroy something it doesn't understand. |
+| 13  | Publish via npm Trusted Publishing (OIDC) on a `v*.*.*` tag push, with no `NPM_TOKEN` in repo secrets                          | Matches the pattern already working in `jsg-logger`. A long-lived publish token in a public repo's secrets is the exact supply-chain exposure the SHA-pinning work was avoiding elsewhere. Cost: the first release of each package must be pushed by hand, because a Trusted Publisher can only be attached to a package that already exists. |
+| 14  | `publish.yml` runs `npm publish --workspaces --access public` rather than iterating an explicit package list                    | The workspace globs in `package.json` are already the source of truth for what exists; a second hardcoded list in a publish script is pure drift risk. `--workspaces` skips private packages on its own. |
+| 15  | Every caller workflow declares `permissions` explicitly, and the CLI/template write that block                                 | A called workflow can only *narrow* the caller's `GITHUB_TOKEN`, never widen it. A caller with no `permissions` block inherits the repo default (contents-only on most repos) and the run dies at startup before any job exists. Found by the hub's own first self-test run. |
 
 ---
 
@@ -97,25 +100,31 @@ Phase 6: rip-and-replace-ci-quality skill, proven against a second repo — dogf
 - Additive by default (skips existing files), `--force` to overwrite, `--dry-run` to preview
 - Idempotent — safe to re-run when the hub or config packages ship a new version
 
-**Dogfood #1**
+**Publishing**
 
-- `jsg-browser-connectors`' two workflow files rewritten as thin callers pinned to `jsg-pr-quality@v1`
-- `jsg-browser-connectors`' `eslint.config.mjs`/`.prettierrc`/`cspell.json`/`tsconfig.json` rewritten to import/extend the four shared packages
+- `.github/workflows/publish.yml` — OIDC trusted publishing on `v*.*.*` tag push, `npm publish --workspaces --access public`
+- Bare Actions tags (`v1`) deliberately excluded from the tag filter so consumer-pin retags don't trigger npm releases
 
-**Template repo**
+**Greenfield template**
 
-- New public `crimsonsunset/ts-project-template`, flagged as a GitHub template repo
-- Starter `package.json`, config files extending the shared packages, thin caller workflows pinned to `v1`, bootstrap README
+- `templates/ts-project/` folder in this repo: starter `package.json`, config files extending the shared packages, thin caller workflows pinned to `v1`, bootstrap README
+- Adopted by `cp -R`, not GitHub's template button
 
 **Adoption skill**
 
 - `skills/rip-and-replace-ci-quality/SKILL.md` authored in this repo, symlinked into `~/.cursor/skills/rip-and-replace-ci-quality/` (same convention as `project-cursor-rules-central`)
 - Detects existing setup and decides what to remove, then calls `pr-quality-cli init` for the mechanical writes — it doesn't hand-edit config files itself
-- Proven end-to-end against one previously-untouched repo (dogfood #2)
+
+**Dogfood (last)**
+
+- `jsg-browser-connectors`' two workflow files rewritten as thin callers pinned to `jsg-pr-quality@v1`
+- `jsg-browser-connectors`' `eslint.config.mjs`/`.prettierrc`/`cspell.json`/`tsconfig.json` rewritten to import/extend the four shared packages
 
 ### Out of scope
 
-- **Migrating every personal repo onto the hub** — only the two dogfood repos move in this plan; the rest adopt later, on demand, via the skill
+- **Migrating every personal repo onto the hub** — only `jsg-browser-connectors` moves in this plan; the rest adopt later, on demand, via the skill
+- **Proving the skill on a second, untouched repo** — deferred. The skill ships authored but unexercised; the dogfood is agent-guided on a repo whose setup is already known, which validates the hub and CLI but not the skill's teardown judgment
+- **A separate GitHub template repo** — superseded by the in-repo `templates/ts-project/` folder (Decision #7)
 - **A shared Knip config package** — Knip's entry-point config is inherently repo-specific (dynamically-loaded adapters, CLI mains); forcing it into a shared package would just reintroduce the noise problem the source plan already solved per-repo
 - **Test/coverage gates in the hub** — `set-times-app`'s test job stays local; no test runner is being standardized
 - **Monorepo/Turbo-aware scoping in the hub** — full-repo checks are fast enough across the target repos that changed-file scoping isn't solving a real problem yet
@@ -138,6 +147,7 @@ flowchart TD
     tsCfg["@crimsonsunset/tsconfig-base"]
     cli["pr-quality-cli\ninit script"]
     skill["rip-and-replace-ci-quality\nskill"]
+    template["templates/ts-project/\ngreenfield starter"]
   end
 
   cli -->|writes stubs for| eslintCfg
@@ -147,14 +157,13 @@ flowchart TD
   cli -->|writes thin callers for| quality
   cli -->|writes thin callers for| review
 
-  template["crimsonsunset/ts-project-template"] -->|extends configs, calls hub| hub
+  template -->|extends configs, pins callers to v1| quality
 
-  jbc["jsg-browser-connectors\n(dogfood #1)"] -->|npx pr-quality-cli init| cli
+  jbc["jsg-browser-connectors\n(dogfood, last)"] -->|npx pr-quality-cli init| cli
 
-  guinea["guinea-pig repo\n(dogfood #2)"] -.->|skill decides, then runs| cli
   skill -.->|invokes| cli
 
-  future["future repos"] -.->|clone template, or run skill| hub
+  future["future repos"] -.->|cp -R template, or run skill| hub
 ```
 
 ### Check ownership
@@ -167,8 +176,9 @@ flowchart TD
 | Model, prompt, review standards                                | `.pr_agent.toml` + `review-standards.md` (per repo)                | Conventions differ per repo                   |
 | Mechanical file writes (config stubs, devDeps, caller YAML)    | `pr-quality-cli init`                                              | Deterministic, testable, idempotent (Decision #11) |
 | Judgment calls (what to remove, how to resolve conflicts)      | `rip-and-replace-ci-quality` skill                                 | Needs repo-specific reasoning, not scriptable (Decision #12) |
-| Bootstrap for a brand-new repo                                 | `crimsonsunset/ts-project-template`                                | Greenfield path (Decision #7)                 |
+| Bootstrap for a brand-new repo                                 | `templates/ts-project/` in this repo                               | Greenfield path (Decision #7)                 |
 | Retrofit for an existing repo                                  | `rip-and-replace-ci-quality` skill + `pr-quality-cli`               | Existing repos need teardown, not just docs   |
+| Token scope granted to the reusable workflow                   | The **caller's** `permissions` block                                | Callees can only narrow, never widen (Decision #15) |
 
 ---
 
@@ -182,6 +192,7 @@ flowchart TD
 | [.github/workflows/review.reusable.yml](../../.github/workflows/review.reusable.yml)   | `workflow_call` version of the PR-Agent job                                   |
 | [.github/actions/setup-toolchain/action.yml](../../.github/actions/setup-toolchain/action.yml) | Composite: `setup-node` + conditional `pnpm/action-setup` + install         |
 | [.github/workflows/self-test.on-pr.yml](../../.github/workflows/self-test.on-pr.yml)    | Calls the two reusable workflows above against this repo, before `v1` is tagged |
+| [.github/workflows/publish.yml](../../.github/workflows/publish.yml)     | OIDC trusted publish of all workspace packages on a `v*.*.*` tag push          |
 | [package.json](../../package.json)                                       | Root: `"workspaces": ["packages/*"]`, engines, root devDeps                    |
 
 ### Create — config packages
@@ -209,18 +220,18 @@ flowchart TD
 | [skills/rip-and-replace-ci-quality/SKILL.md](../../skills/rip-and-replace-ci-quality/SKILL.md) | Agent procedure for retrofitting an existing repo onto the hub          |
 | [README.md](../../README.md)                                             | Adoption README: greenfield (template) vs. existing repo (skill) paths |
 
-### Create — template repo (separate `crimsonsunset/ts-project-template`)
+### Create — greenfield template folder ([templates/ts-project/](../../templates/ts-project/))
 
-| File                     | Purpose                                                          |
-| -------------------------- | ------------------------------------------------------------------- |
-| `package.json`             | Depends on all four `@crimsonsunset/*` packages as devDeps          |
-| `eslint.config.mjs`         | Imports `@crimsonsunset/eslint-config`, no overrides                |
-| `.prettierrc`               | Imports `@crimsonsunset/prettier-config`                             |
-| `tsconfig.json`             | `"extends": "@crimsonsunset/tsconfig-base"`                          |
-| `.github/workflows/*.yml`   | Thin callers pinned to `jsg-pr-quality@v1`                           |
-| `README.md`                 | "Use this template" bootstrap instructions                          |
+| File                      | Purpose                                                                  |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `package.json`              | Depends on all four `@crimsonsunset/*` packages as devDeps                  |
+| `eslint.config.mjs`         | Imports `@crimsonsunset/eslint-config`, no overrides                        |
+| `.prettierrc`               | Imports `@crimsonsunset/prettier-config`                                    |
+| `tsconfig.json`             | `"extends": "@crimsonsunset/tsconfig-base"`                                 |
+| `.github/workflows/*.yml`   | Thin callers pinned to `jsg-pr-quality@v1`, each with a `permissions` block |
+| `README.md`                 | `cp -R` bootstrap instructions                                              |
 
-### Modify — `jsg-browser-connectors` (dogfood #1)
+### Modify — `jsg-browser-connectors` (dogfood)
 
 | File                                          | Change                                                                       |
 | ------------------------------------------------ | -------------------------------------------------------------------------------- |
@@ -234,7 +245,7 @@ flowchart TD
 
 ## Phasing
 
-### Phase 1: Reusable workflows + composite action, self-tested
+### Phase 1: Reusable workflows + composite action, self-tested — **done**
 
 Roughly one day.
 
@@ -247,9 +258,11 @@ Roughly one day.
 
 **Outcome:** A PR against `jsg-pr-quality` triggers its own reusable workflow calling itself and posts a sticky report — the `workflow_call` plumbing is proven before any external repo depends on it.
 
+**Result:** Achieved on [PR #1](https://github.com/crimsonsunset/jsg-pr-quality/pull/1), but not on the first attempt — the first run died with `startup_failure` because the caller had no `permissions` block (Decision #15). After the fix all five jobs ran and the sticky report carried the real `ci:lint` summary rather than the setup-failed fallback, which also proves the multiline `$GITHUB_OUTPUT` value survives the `workflow_call` job-output boundary. `v1` tagged at the validated commit. `setup-toolchain` exists but the reusable workflow inlines its steps instead of calling it, because a composite action referenced by tag can't be resolved before that tag exists.
+
 ---
 
-### Phase 2: Shareable config packages
+### Phase 2: Shareable config packages — **built, publish blocked**
 
 Roughly half a day.
 
@@ -262,9 +275,11 @@ Roughly half a day.
 
 **Outcome:** Four public `@crimsonsunset/*` packages exist on npm, installable independently of the hub's CI workflow.
 
+**Result:** All four packages are written and the hub lints itself with them, since npm workspaces resolve them locally without a registry. The npm publish itself is blocked on a 2FA security key that won't authenticate; nothing in the hub depends on it, but the greenfield template and any CLI run against a real repo do.
+
 ---
 
-### Phase 3: `pr-quality-cli` init script
+### Phase 3: `pr-quality-cli` init script — **built, publish blocked**
 
 Roughly half a day.
 
@@ -276,11 +291,39 @@ Roughly half a day.
 
 **Outcome:** `npx @crimsonsunset/pr-quality-cli init` run inside an empty scratch project produces working config files and caller workflows without any manual editing.
 
+**Result:** Verified against a scratch directory in `/tmp`. The caller workflows it writes carry the `permissions` block added in Decision #15.
+
 ---
 
-### Phase 4: `jsg-browser-connectors` becomes the hub's first caller
+### Phase 4: `templates/ts-project/` greenfield folder — **done**
 
 Roughly half a day.
+
+- Seed `templates/ts-project/` with `package.json` (devDeps on all four config packages), `eslint.config.mjs`, `.prettierrc`, `tsconfig.json`, thin caller workflows pinned to `v1`, bootstrap README
+- Adopted with `cp -R`, no GitHub template flag (Decision #7)
+
+**Outcome:** A brand-new project copied from the folder passes its first PR's quality checks with no copy-pasting from an existing repo.
+
+**Result:** Folder exists with caller workflows carrying `permissions`. Not yet exercised end to end, because a fresh copy can't `npm install` until the `@crimsonsunset/*` packages are published.
+
+---
+
+### Phase 5: `rip-and-replace-ci-quality` skill — **authored, unexercised**
+
+Roughly half a day to author.
+
+- Author `skills/rip-and-replace-ci-quality/SKILL.md`: detect existing lint/CI setup → decide what's superseded and safe to remove (old devDeps, old config files, old workflow YAML) → run `npx @crimsonsunset/pr-quality-cli init` for the mechanical writes → hand-resolve anything the CLI skipped or that needs a repo-specific override → run lint/build locally → open a PR and confirm the hub's checks pass
+- Symlink it into `~/.cursor/skills/rip-and-replace-ci-quality/`, matching the existing `project-cursor-rules-central` symlink convention
+
+**Outcome:** An agent has a written teardown-then-init procedure instead of free-handing config edits per repo.
+
+**Result:** Written and symlinked. Proving it against a second, previously-untouched repo is deferred out of this plan — Phase 6 is agent-guided on a repo whose setup is already known, so it validates the hub and CLI but not the skill's teardown judgment.
+
+---
+
+### Phase 6: `jsg-browser-connectors` becomes the hub's first caller — **not started**
+
+Roughly half a day. Runs last, on purpose.
 
 - Run `npx @crimsonsunset/pr-quality-cli init` inside `jsg-browser-connectors` to write the thin caller workflows and config stubs
 - Hand-add back the repo-specific overrides the CLI can't know about: the alias-import restriction and OpenCLI-globals exception in `eslint.config.mjs`
@@ -289,31 +332,7 @@ Roughly half a day.
 
 **Outcome:** `jsg-browser-connectors` has ~10-line workflow files and config files that are mostly one-line extends, produced by the CLI rather than hand-written, and a real PR proves the externally-hosted hub matches the in-repo version it replaced.
 
----
-
-### Phase 5: `ts-project-template`
-
-Roughly half a day.
-
-- Create public `crimsonsunset/ts-project-template`
-- Seed `package.json` (devDeps on all four config packages), `eslint.config.mjs`, `.prettierrc`, `tsconfig.json`, thin caller workflows pinned to `v1`, bootstrap README
-- Flag the repo as a GitHub template (`gh api repos/crimsonsunset/ts-project-template -X PATCH -f is_template=true`)
-- Use the template to spin up a throwaway repo, confirm CI is green on the first commit with zero manual config
-
-**Outcome:** A brand-new project created from the template passes its first PR's quality checks with no copy-pasting from an existing repo.
-
----
-
-### Phase 6: `rip-and-replace-ci-quality` skill, proven on a second repo
-
-Roughly one day, most of it spent on the second repo's actual quirks.
-
-- Author `skills/rip-and-replace-ci-quality/SKILL.md`: detect existing lint/CI setup → decide what's superseded and safe to remove (old devDeps, old config files, old workflow YAML) → run `npx @crimsonsunset/pr-quality-cli init` for the mechanical writes → hand-resolve anything the CLI skipped or that needs a repo-specific override → run lint/build locally → open a PR and confirm the hub's checks pass
-- Symlink it into `~/.cursor/skills/rip-and-replace-ci-quality/`, matching the existing `project-cursor-rules-central` symlink convention
-- Pick a guinea-pig repo not touched by Phase 4 (e.g. `jsg-tech-check-site`, already on pnpm, no CI yet) and run the skill against it end to end
-- Fix whatever the skill (or the CLI, if it's the CLI's fault) gets wrong on real repo #2 — Phase 4 was hand-guided, so it doesn't validate the skill itself
-
-**Outcome:** Running the skill against a second, previously untouched repo leaves it with green lint/build, a real PR carrying a hub-driven quality report, and no leftover ad-hoc config files — proving the skill and the CLI it drives actually work together, not just the hub.
+**Blocked on:** the config packages being published, since the CLI adds them as devDeps and the repo's `npm ci` would fail on unresolvable dependencies. The workflow half could go first on its own if the config swap is deferred.
 
 ---
 
@@ -326,7 +345,7 @@ Roughly one day, most of it spent on the second repo's actual quirks.
 | `jsg-browser-connectors/scripts/ci/lint.script.mjs`                                                       | Orchestrator pattern the hub does *not* absorb — stays per-repo (Decision #3)       |
 | `jsg-browser-connectors/eslint.config.mjs`                                                                | Source for `@crimsonsunset/eslint-config`'s base rules                              |
 | `set-times-app/.github/workflows/quality.on-pr.yml`                                                       | Confirms the pnpm install pattern (`pnpm/action-setup@v5`, `cache: 'pnpm'`) the composite action must replicate |
-| `jsg-tech-check-site/package.json`                                                                        | `packageManager: pnpm@10.13.1` — likely dogfood #2 candidate for Phase 6             |
+| `jsg-tech-check-site/package.json`                                                                        | `packageManager: pnpm@10.13.1` — candidate for the deferred skill-driven migration  |
 | `~/.cursor/rules/project-cursor-rules-central.mdc`                                                         | Existing symlink convention the skill's `~/.cursor/skills/` placement follows        |
 | [PR Quality Flow Plan](https://github.com/crimsonsunset/jsg-browser-connectors/blob/feature/pr-quality-flow/docs/planning/pr-quality-flow-plan.md) | The in-repo build this hub extracts from; its Phase 6 is what this doc replaces with real detail |
 
@@ -351,12 +370,25 @@ Roughly one day, most of it spent on the second repo's actual quirks.
 - Decisions locked: all three approaches (reusable workflow, config packages, template repo) plus a rip-and-replace skill, `jsg-browser-connectors` as first caller before any other repo, `v1` tag pinning, public npm scope
 - Added a `pr-quality-cli init` script (Phase 3) after the user asked for something that "moves things into place" — the skill now drives the CLI for mechanical writes instead of hand-editing every config file itself; renumbered Phases 3–5 to 4–6 accordingly
 
+### 2026-08-11 — Phases 1–5 built, `v1` tagged
+
+- Reordered the phases so the dogfood runs last: workflows → configs → CLI → template folder → skill → dogfood. The template became an in-repo folder and the skill moved in-repo, both at the user's direction (Decisions #7, #8)
+- Built and merged all of Phases 1–5 in [PR #1](https://github.com/crimsonsunset/jsg-pr-quality/pull/1)
+- Security-reviewed the workflows before publishing anything, since the repo is public. Two unpinned third-party references were the only findings: `marocchino/sticky-pull-request-comment` (now pinned to `5770ad5`) and the `semgrep/semgrep` container (now pinned to `1.59.1@sha256:fc8bcc60…`, digest verified against Docker Hub)
+- Wired publishing to OIDC trusted publishing (Decision #13) and replaced a hardcoded publish script with `npm publish --workspaces` (Decision #14)
+- **The hub's first self-test run failed at startup**, which is exactly what Phase 1 existed to catch. Root cause: a called workflow can only narrow the caller's `GITHUB_TOKEN`, and the caller had no `permissions` block, so `pull-requests: write` resolved against a repo default of `pull-requests: none`. The same gap was in both CLI templates and both template-folder workflows, so every future adopter would have hit it (Decision #15)
+- Worth noting `actionlint` passed clean on all five workflow files both before and after that bug, and GitHub exposes nothing about startup failures through its REST API — the error text only exists in the run page's HTML
+- Second run green: all five jobs ran and the sticky report rendered the real `ci:lint` summary. Tagged `v1` at that commit
+- **Blocked:** npm publish, on a 2FA security key that won't authenticate. Phase 6 needs the packages published; the hub itself does not
+
 ---
 
 ## Notes & Decisions
 
-- **This repo is currently empty.** Everything in "Files to create" is net-new; there is no existing structure to preserve or migrate from inside `jsg-pr-quality` itself.
+- **Everything in "Files to create" now exists.** The tables are kept as a map of the hub rather than a to-do list.
+- **The self-test earned its keep on the very first run.** It caught a caller-permissions bug that `actionlint` cannot see and that would have broken every adopting repo, not just this one. That is the entire argument for Phase 1 existing before any external consumer.
+- **Publishing and the workflows are independent.** The hub lints itself with the unpublished config packages because npm workspaces resolve them locally. Only consumers outside this repo need the registry, which is why the npm 2FA block doesn't stall the hub's own development.
 - **The config packages must stay thin.** The moment one of them tries to be a complete, non-extendable config, the first repo with a real exception (OpenCLI's `.main.js` globals, `sites/*/opencli/**` ignores) forces a fork instead of an override. Decision #6 exists specifically to prevent that.
 - **`self-test.on-pr.yml` calling the hub's own reusable workflow is the cheapest possible integration test.** No separate consumer repo is needed to catch a broken `workflow_call` input/output wiring — it fails on the hub's own next PR.
-- **Phase 4 (hand-guided CLI run) does not validate Phase 6's skill.** Those are deliberately separate proofs: Phase 4 proves the hub and CLI work, Phase 6 proves the *skill* can drive that same CLI without a human deciding what to remove first.
-- **The CLI has to stay dumber than the skill on purpose.** If `pr-quality-cli init` starts trying to guess which existing config is safe to delete, it becomes a second, less-capable copy of the skill's judgment logic. Keeping it additive-only (Decision #12) is what makes it safe to run blind in Phase 4, before the skill even exists.
+- **Phase 6's agent-guided CLI run does not validate the skill.** The dogfood proves the hub and CLI work on a repo whose quirks are already understood. Proving the *skill* needs a repo where nobody has pre-decided what to tear out, which is deliberately deferred.
+- **The CLI has to stay dumber than the skill on purpose.** If `pr-quality-cli init` starts trying to guess which existing config is safe to delete, it becomes a second, less-capable copy of the skill's judgment logic. Keeping it additive-only (Decision #12) is what makes it safe to run blind.
