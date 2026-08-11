@@ -27,4 +27,6 @@ npx @crimsonsunset/pr-quality-cli init
 1. Rename `package.json` `name`
 2. Add `OPENROUTER__KEY` from `OPENROUTER_KEY_PR_AGENT` in `~/.cursor/secrets.env`
    (`printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY`)
-3. Layer any repo-specific ESLint/tsconfig overrides
+3. Merge `.pr_agent.toml` to the default branch before expecting its `model` to
+   apply — `review.reusable.yml` reads it via `PR_AGENT_CONFIG_BRANCH`
+4. Layer any repo-specific ESLint/tsconfig overrides

@@ -351,6 +351,9 @@ Next:
      name/URL is wrong.
   4. Layer .github/review-standards.md with this repo's hard rules (and mirror them
      in .pr_agent.toml extra_instructions)
-  5. Open a PR to confirm the sticky quality report + PR-Agent review both fire
+  5. Merge .pr_agent.toml to the default branch before expecting model overrides.
+     review.reusable.yml reads it via PR_AGENT_CONFIG_BRANCH=<default branch>;
+     until then PR-Agent silently uses the Action's gpt-5.6 defaults.
+  6. Open a PR to confirm the sticky quality report + PR-Agent review both fire
 `);
 }

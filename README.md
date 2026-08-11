@@ -73,6 +73,21 @@ printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY
 Per-repo spend shows up in OpenRouter analytics via attribution headers stamped
 from git origin / package.json: `HTTP-Referer`, `X-OpenRouter-Title`, `X-Title`.
 
+### `.pr_agent.toml` must land on the default branch
+
+`review.reusable.yml` sets `PR_AGENT_CONFIG_BRANCH` to
+`${{ github.event.repository.default_branch }}`. Without that env var, the
+[the-pr-agent/pr-agent](https://github.com/the-pr-agent/pr-agent) Action never
+fetches `.pr_agent.toml` from any branch and silently uses the Action's built-in
+defaults (`gpt-5.6` / `gpt-5.6-terra` as of v0.42.0). Reading only the default
+branch is intentional: a PR author cannot hijack model/prompt settings from the
+PR head.
+
+Adoption consequence: the first PR that *introduces* `.pr_agent.toml` still runs
+on Action defaults until that file merges. Merge (or land a tiny config-only PR
+to `main`/`master` first), then expect the configured `model` /
+`fallback_models` to stick.
+
 ## Extending shared configs with repo-specific vocabulary
 
 `@crimsonsunset/cspell-config` only ships words genuinely shared across every hub consumer

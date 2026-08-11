@@ -366,6 +366,22 @@ Retargeted from `jsg-browser-connectors` by [hardening Decision #1](./quality-ca
 
 ## Progress Log
 
+### 2026-08-11 — PR-Agent silent `gpt-5.6` default (hub `0.1.11`)
+
+- Dogfood on `karakeep-instagram-relay` + confirmed on `jsg-browser-connectors`:
+  PR-Agent job logs showed `model: gpt-5.6` / `fallback_models: [gpt-5.6-terra]`
+  despite every repo `.pr_agent.toml` setting `openrouter/anthropic/claude-sonnet-4`
+- Root cause in [the-pr-agent/pr-agent](https://github.com/the-pr-agent/pr-agent)
+  `github_provider.get_repo_settings()`: `.pr_agent.toml` is only fetched when
+  `PR_AGENT_CONFIG_BRANCH` (or `CONFIG.CONFIG_BRANCH`) is set; otherwise the
+  Action's built-in defaults win silently
+- Fix in `review.reusable.yml`: set
+  `PR_AGENT_CONFIG_BRANCH: ${{ github.event.repository.default_branch }}`
+  (default-branch-only also blocks PR-head config hijack)
+- Documented in README, skill, CLI next-steps, `.pr_agent.toml` templates, and
+  caller `review.on-pr.yml` comments. Adoption note: first PR that introduces
+  `.pr_agent.toml` still runs Action defaults until that file merges
+
 ### 2026-08-10 — Plan written
 
 - Surveyed `set-times-app` and `jsg-tech-check-site` to confirm pnpm is already in real use across the target repo fleet, not just a hypothetical

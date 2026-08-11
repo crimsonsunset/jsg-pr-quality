@@ -132,8 +132,16 @@ Fix failures before opening a PR. Do not weaken shared rules to paper over real 
 3. Confirm each caller workflow kept its `permissions` block — a called workflow
    can only narrow the caller's token, so a caller missing `pull-requests: write`
    fails at startup with `but is only allowed 'pull-requests: none'`
-4. Open a PR and confirm the sticky quality report, reviewdog annotations, **and**
-   PR-Agent review all fire
+4. **Land `.pr_agent.toml` on the default branch before trusting model overrides.**
+   `review.reusable.yml` sets `PR_AGENT_CONFIG_BRANCH` to the repo default branch.
+   Without that env (older hub pins) or without the file on the default branch,
+   PR-Agent silently uses the Action's built-in `gpt-5.6` defaults and ignores
+   the PR-head copy of `.pr_agent.toml`. Prefer a tiny config-only merge first,
+   then open the larger quality PR — or accept one Action-default review on the
+   adoption PR itself.
+5. Open a PR and confirm the sticky quality report, reviewdog annotations, **and**
+   PR-Agent review all fire. In the PR-Agent job log, check
+   `Generating prediction with …` matches `.pr_agent.toml` `model` (not `gpt-5.6`).
 
 ## Hard rules
 
@@ -141,6 +149,9 @@ Fix failures before opening a PR. Do not weaken shared rules to paper over real 
 - Do not expand the CLI to delete files — teardown is this skill's job
 - Do not migrate application code, rename source trees, or change package managers
 - Stop and ask if a workflow file looks like it mixes quality gates with deploy/release steps
+- Do not claim PR-Agent is using `.pr_agent.toml` `model` until that file is on the
+  default branch and the hub's `review.reusable.yml` sets `PR_AGENT_CONFIG_BRANCH`
+  (verify via job log: `Generating prediction with …`)
 
 ## Hub paths (this repo)
 

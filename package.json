@@ -1,6 +1,6 @@
 {
   "name": "jsg-pr-quality",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": true,
   "description": "Reusable PR quality workflows, shareable lint/format configs, and adoption tooling",
   "type": "module",

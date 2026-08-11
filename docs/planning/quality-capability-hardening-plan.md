@@ -1,6 +1,6 @@
 # Quality Capability Hardening Plan
 
-**Status:** Done. Phases 1–5 shipped at `0.1.4`. Dogfood (hub-extraction Phase 6) ran against `karakeep-instagram-relay`: local `ci:lint`/`ci:test` green; consumer PR deferred. Dogfood forced hub fixes `0.1.6` (unicorn pin / `unopinionated`) and `0.1.7` (knip scripts glob + drop redundant `eslint-config-prettier` from CLI).
+**Status:** Done. Phases 1–5 shipped at `0.1.4`. Dogfood (hub-extraction Phase 6) ran against `karakeep-instagram-relay`: local `ci:lint`/`ci:test` green; consumer PR opened. Dogfood forced hub fixes through `0.1.11` (see Progress Log — PR-Agent `PR_AGENT_CONFIG_BRANCH`).
 **Last updated:** Aug 11, 2026
 **Scope:** Raise what the hub actually *detects*, as opposed to how well it is assembled. Opens the orchestrator's closed check list, makes type-aware ESLint the default instead of an unused opt-in, gives plain-JS consumers a type-checking path, turns tests and knip into default-on gates (reversing two exclusions from the extraction plan), wires a build gate where one exists, and recalibrates `npm audit` so it stops being permanently red.
 **Related:** [PR Quality Hub Plan](./hub-extraction-plan.md) (built the hub this hardens — its Phase 6 dogfood depends on this work)
@@ -354,6 +354,12 @@ Ordered by bugs caught per unit of noise, which is also the order to add and val
 ---
 
 ## Progress Log
+
+### 2026-08-11 — PR-Agent model override never applied → hub `0.1.11`
+
+- Unrelated to deterministic gates, but surfaced by the same dogfood PR: OpenRouter billed `gpt-5.6` while every `.pr_agent.toml` said `claude-sonnet-4`
+- Cause: [the-pr-agent/pr-agent](https://github.com/the-pr-agent/pr-agent) only loads `.pr_agent.toml` when `PR_AGENT_CONFIG_BRANCH` is set. Hub now sets it to the repo default branch in `review.reusable.yml`
+- Docs/skill/CLI/templates updated; `.pr_agent.toml` must exist on the default branch before model overrides stick
 
 ### 2026-08-11 — Dogfood feedback (karakeep) → hub `0.1.6` / `0.1.7`
 
