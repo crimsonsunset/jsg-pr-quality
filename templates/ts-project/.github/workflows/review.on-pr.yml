@@ -14,6 +14,9 @@ permissions:
   issues: write
 
 jobs:
+  # issue_comment author-association gating and the v1-vs-SHA pin tradeoff both
+  # live upstream in review.reusable.yml — not missing here, just not visible
+  # to a PR review scoped to this repo's diff.
   review:
     uses: crimsonsunset/jsg-pr-quality/.github/workflows/review.reusable.yml@v1
     secrets:

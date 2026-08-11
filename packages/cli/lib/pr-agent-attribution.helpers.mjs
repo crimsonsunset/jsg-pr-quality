@@ -16,7 +16,10 @@ import { pathToFileURL } from 'node:url';
  */
 export function normalizeRepoUrl(raw) {
   if (!raw || typeof raw !== 'string') return null;
-  let url = raw.trim().replace(/^git\+/, '').replace(/\.git$/, '');
+  let url = raw
+    .trim()
+    .replace(/^git\+/, '')
+    .replace(/\.git$/, '');
   const ssh = url.match(/^git@([^:]+):(.+)$/);
   if (ssh) {
     url = `https://${ssh[1]}/${ssh[2]}`;
