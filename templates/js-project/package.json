@@ -1,36 +1,35 @@
 {
-  "name": "my-ts-project",
+  "name": "my-js-project",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
   },
+  "main": "src/index.js",
   "scripts": {
     "lint:eslint": "eslint .",
-    "lint:tsc": "tsc --noEmit",
-    "lint:cspell": "cspell \"**/*.{ts,mjs,md,json}\" --no-progress",
+    "lint:cspell": "cspell \"**/*.{ts,tsx,mjs,js,md,json}\" --no-progress",
+    "lint:knip": "knip",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "ci:lint": "node scripts/ci/lint.script.mjs",
     "ci:test": "node scripts/ci/test.script.mjs",
-    "lint:knip": "knip"
+    "lint:tsc": "tsc --noEmit"
   },
-  "prettier": "@crimsonsunset/prettier-config",
   "devDependencies": {
-    "@crimsonsunset/cspell-config": "^0.1.0",
     "@crimsonsunset/eslint-config": "^0.1.0",
     "@crimsonsunset/prettier-config": "^0.1.0",
-    "@crimsonsunset/tsconfig-base": "^0.1.0",
+    "@crimsonsunset/cspell-config": "^0.1.0",
+    "@crimsonsunset/knip-config": "^0.1.0",
     "@eslint/js": "^10.0.0",
-    "@types/node": "^22.0.0",
-    "cspell": "^10.0.0",
     "eslint": "^10.0.0",
     "eslint-config-prettier": "^10.0.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.0.0",
     "typescript-eslint": "^8.0.0",
-    "@crimsonsunset/knip-config": "^0.1.0",
-    "knip": "^5.0.0"
-  }
+    "cspell": "^10.0.0",
+    "knip": "^5.0.0",
+    "typescript": "^5.0.0"
+  },
+  "prettier": "@crimsonsunset/prettier-config"
 }

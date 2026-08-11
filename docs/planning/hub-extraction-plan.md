@@ -28,8 +28,7 @@ The skill doesn't hand-write every file itself, though. A `packages/cli` init sc
 - **Not a redesign of the flow itself** — the gate set (ESLint, `tsc`, build, Knip, cspell, Semgrep, gitleaks, `npm audit`, PR-Agent) and the sticky-report pattern are already decided and working in `jsg-browser-connectors`. This plan extracts and parameterizes, it doesn't re-litigate.
 - **Not a codemod that rewrites application logic** — the CLI script only ever touches config files, `package.json` scripts/devDeps, and `.github/workflows/*.yml`. It never touches `shared/`, `sites/`, or any repo's actual source.
 - **Not a full-fleet migration** — only `jsg-browser-connectors` moves onto the hub in this plan. Every other personal repo adopts later, on demand, by running the skill.
-- **Not a shared `knip.json`** — Knip needs explicit per-repo entry points (dynamically-loaded adapters, CLI mains) or it reports the whole surface as unused. That config stays local to each repo, same as it already is in `jsg-browser-connectors`.
-- **Not test/coverage tooling** — `set-times-app`'s `ci:test` job stays local. No test runner is being standardized here.
+- ~~**Not a shared `knip.json`**~~ / ~~**Not test/coverage tooling**~~ — **Reversed** in [quality-capability-hardening-plan.md](./quality-capability-hardening-plan.md) (Decisions #7–#8). Knip now ships `@crimsonsunset/knip-config` + CLI-derived `entry` via `knip.config.js`; tests ship as a default-on `ci:test` job with a "none found" state when no suite exists.
 - **Not a monorepo/Turbo adoption** — same reasoning as the source plan: full-repo checks are fast enough that changed-file scoping is overhead, not a fix.
 - **Not new AI-review prompt content** — `.pr_agent.toml` and `review-standards.md` stay per-repo (conventions differ per repo); the hub only wraps the workflow that invokes PR-Agent.
 

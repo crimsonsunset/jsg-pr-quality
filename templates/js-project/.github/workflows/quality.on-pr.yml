@@ -20,6 +20,6 @@ jobs:
     uses: crimsonsunset/jsg-pr-quality/.github/workflows/quality.reusable.yml@v1
     with:
       node-version: '22'
-      package-manager: __PACKAGE_MANAGER__
+      package-manager: npm
       lint-script: ci:lint
       test-script: ci:test

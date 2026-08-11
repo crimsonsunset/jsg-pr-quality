@@ -1,6 +1,6 @@
 # Quality Capability Hardening Plan
 
-**Status:** Not started. Follows the capability audit of Aug 11, 2026; blocks the `karakeep-instagram-relay` dogfood.
+**Status:** Done. Phases 1–5 shipped and published as `0.1.3`. Unblocks the `karakeep-instagram-relay` dogfood (hub-extraction Phase 6).
 **Last updated:** Aug 11, 2026
 **Scope:** Raise what the hub actually *detects*, as opposed to how well it is assembled. Opens the orchestrator's closed check list, makes type-aware ESLint the default instead of an unused opt-in, gives plain-JS consumers a type-checking path, turns tests and knip into default-on gates (reversing two exclusions from the extraction plan), wires a build gate where one exists, and recalibrates `npm audit` so it stops being permanently red.
 **Related:** [PR Quality Hub Plan](./hub-extraction-plan.md) (built the hub this hardens — its Phase 6 dogfood depends on this work)
@@ -43,7 +43,7 @@ Phase 1: orchestrator discovers lint:* scripts (unblocks everything below)
   ↓
 Phase 2: type-aware ESLint default for TS, checkJs path for JS
   ↓
-Phase 3: tests as a first-class gate (test-script input + optional job)
+Phase 3: tests as a first-class gate (test-script input + default-on job)
   ↓
 Phase 4: revisit knip + build gate, now that the orchestrator can run them
   ↓
@@ -111,7 +111,7 @@ Phase 5: recalibrate npm audit, add eslint-plugin-n + import-x
 
 - Always writes `ci:test` and a `test.script.mjs` orchestrator; detection only picks *which* runner it invokes and whether any test files exist
 - Detects a `build` script and wires `lint:build`
-- Always writes `knip.json` extending the shared base, with `entry` pre-populated from `package.json` `main`/`bin`/`exports`, `scripts/*.mjs`, and `src/index.*`
+- Always writes `knip.config.js` spreading the shared `@crimsonsunset/knip-config` defaults, with `entry` pre-populated from `package.json` `main`/`bin`/`exports`, `scripts/*.mjs`, and `src/index.*`
 - New `--js-typecheck` flag writing `allowJs`/`checkJs` and enabling `lint:tsc` for JS repos
 - Writes the type-aware `eslint.config.mjs` variant when a tsconfig is present
 
@@ -219,13 +219,13 @@ flowchart TD
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | [packages/cli/lib/init.mjs](../../packages/cli/lib/init.mjs)          | Runner resolution, knip `entry` derivation, build-script detection, `--js-typecheck`, type-aware eslint variant |
 | [packages/cli/bin/pr-quality.mjs](../../packages/cli/bin/pr-quality.mjs) | Parse and document `--js-typecheck`                                                          |
-| [packages/cli/templates/](../../packages/cli/templates/)              | New `eslint.config.type-checked.mjs`, `knip.json`, `tsconfig.checkjs.json`, `test.script.mjs` templates |
+| [packages/cli/templates/](../../packages/cli/templates/)              | New `eslint.config.type-checked.mjs`, `tsconfig.checkjs.json`, `test.script.mjs` templates; knip config built in `init.mjs` |
 
 ### Create — knip config package and JS template (Phase 4)
 
 | File                                                       | Purpose                                                            |
 | ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| `packages/knip-config/knip.json`                           | Shared `project`/`ignore` defaults; no `entry` field by design      |
+| `packages/knip-config/index.mjs`                           | Shared `project`/`ignore` defaults; no `entry` field by design      |
 | `packages/knip-config/package.json`                        | `@crimsonsunset/knip-config`, `knip` as a peer dependency           |
 | `templates/js-project/`                                    | Plain-JS greenfield starter with `checkJs` enabled from the start   |
 
@@ -290,14 +290,14 @@ Roughly one day.
 
 Roughly one day.
 
-- Create `packages/knip-config` exporting `project`/`ignore` defaults only (`dist`, `coverage`, lockfiles, vendored trees), with no `entry` field and a comment explaining that the CLI fills it per-repo
-- CLI always writes `knip.json` extending the shared base, deriving `entry` from `package.json` `main`/`bin`/`exports`, plus `scripts/*.mjs` and `src/index.*` when present
+- Create `packages/knip-config` as an ES module exporting `project`/`ignore` defaults only (`dist`, `coverage`, lockfiles, vendored trees), with no `entry` field and a comment explaining that the CLI fills it per-repo. Knip has no JSON `extends` and does not load `*.mjs` config names, so consumers get a generated `knip.config.js`
+- CLI always writes `knip.config.js` spreading the shared base, deriving `entry` from `package.json` `main`/`bin`/`exports`, plus `scripts/*.mjs` and `src/index.*` when present
 - CLI always adds `lint:knip`, which Phase 1's discovery then picks up with no workflow change
 - CLI adds `lint:build` when the repo has a `build` script, since a build gate without a build script cannot run at all
-- Verify the derived entries against three shapes: a plain Node service (`main` only), a repo with a `bin`, and `jsg-browser-connectors`' dynamically-loaded adapters — the last should still need hand-editing, and the CLI must not clobber an existing `knip.json`
+- Verify the derived entries against three shapes: a plain Node service (`main` only), a repo with a `bin`, and `jsg-browser-connectors`' dynamically-loaded adapters — the last should still need hand-editing, and the CLI must not clobber an existing knip config (`knip.json` / `knip.config.js` / etc.)
 - Update the extraction plan's "What this is NOT" entries to record that both exclusions were reversed here
 
-**Outcome:** Any repo initialized by the CLI reports dead files, unused exports, and unused dependencies on its first PR without the consumer writing knip config by hand. `jsg-browser-connectors`' existing `knip.json` is left untouched, and a repo with a build script also gates PRs on the build succeeding.
+**Outcome:** Any repo initialized by the CLI reports dead files, unused exports, and unused dependencies on its first PR without the consumer writing knip config by hand. `jsg-browser-connectors`' existing knip config is left untouched, and a repo with a build script also gates PRs on the build succeeding.
 
 ---
 
@@ -354,6 +354,42 @@ Ordered by bugs caught per unit of noise, which is also the order to add and val
 ---
 
 ## Progress Log
+
+### 2026-08-11 — Phase 5 done
+
+- Base ESLint now layers `eslint-plugin-n` (Node-scoped), `eslint-plugin-unicorn` (`unopinionated`), and `eslint-plugin-import-x`; peers declared with `>=` ranges
+- Disabled a short list of script/CLI false positives (`n/no-process-exit`, `n/hashbang`, `unicorn/prefer-top-level-await`, array-sort noise)
+- Audit recalibrated to `--audit-level=moderate --omit=dev` (pnpm `--prod`)
+- CLI writes `engines.node` when missing so `eslint-plugin-n` does not silently assume Node 16
+- Lockstep version bump to `0.1.3`; published via `v0.1.3` tag (OIDC) after first-hand publish of `@crimsonsunset/knip-config`
+
+### 2026-08-11 — Phase 4 done
+
+- Shipped `@crimsonsunset/knip-config` as an ES module (`project`/`ignore` only). Knip has no JSON `extends` and does not load `*.mjs` config names, so the CLI writes `knip.config.js`
+- CLI always wires `lint:knip` + derived `entry` (`main`/`bin`/`exports`, `scripts/**/*.mjs`, `src/index.*`); skips when any knip config already exists
+- CLI adds `lint:build` only when a `build` script is already present
+- Added `templates/js-project/` with `checkJs` on by default; hub dogfoods `lint:knip` via workspace-aware `knip.config.js`
+
+### 2026-08-11 — Phase 3 done
+
+- Added `test-script` (default `ci:test`) + `run-tests` (default true) and a `test` job to `quality.reusable.yml`
+- Sticky report gains a Tests row (`Passed` / `Failed` / `None found` / `Skipped`); required-jobs treats `none` as success
+- CLI always writes `ci:test` + `test.script.mjs`; hub dogfoods the same orchestrator
+- Locally verified all three suite states: none (exit 0), pass (exit 0), fail (exit 1)
+
+### 2026-08-11 — Phase 2 done
+
+- Added `@crimsonsunset/eslint-config/recommended-type-checked` (`recommendedTypeChecked` + `stylisticTypeChecked`); reframed `/type-checked` as the strict opt-in
+- Extracted shared `scopeToTsFiles` helper; CLI writes the type-aware eslint stub when TypeScript is detected
+- Added `--js-typecheck` (allowJs/checkJs tsconfig + `lint:tsc` + expected-findings warning); tooling/config paths excluded from checkJs
+- Smoke-tested: TS floating promise fails eslint; plain JS stays without `lint:tsc`; JS+`--js-typecheck` fails tsc on a deliberate type mismatch
+
+### 2026-08-11 — Phase 1 done
+
+- Replaced the fixed `CHECKS` array with `discoverChecks()` over `format:check` + every `lint:*` script
+- Label map covers Prettier / ESLint / TypeScript / cspell / Knip / Build; unknowns use the bare script name and sort alphabetically after known checks
+- Synced byte-identical copies to `packages/cli/templates/`, `scripts/ci/`, and `templates/ts-project/scripts/ci/`
+- Verified on a scratch repo: `lint:knip`, `lint:stylelint`, `lint:madeup`, and `lint:zzz` all ran and appeared in the sticky summary in the expected order
 
 ### 2026-08-11 — Plan written
 

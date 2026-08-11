@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { buildKnipConfig, deriveKnipEntry } from './knip-entry.helpers.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 
@@ -9,14 +11,19 @@ const BASE_DEV_DEPS = {
   '@crimsonsunset/eslint-config': '^0.1.0',
   '@crimsonsunset/prettier-config': '^0.1.0',
   '@crimsonsunset/cspell-config': '^0.1.0',
+  '@crimsonsunset/knip-config': '^0.1.0',
   '@eslint/js': '^10.0.0',
   eslint: '^10.0.0',
   'eslint-config-prettier': '^10.0.0',
+  'eslint-plugin-import-x': '^4.0.0',
+  'eslint-plugin-n': '^17.0.0',
+  'eslint-plugin-unicorn': '^56.0.0',
   prettier: '^3.0.0',
   // typescript-eslint's tseslint.config() wrapper is used by the eslint config
   // template regardless of TS usage — it's a plain flat-config array composer.
   'typescript-eslint': '^8.0.0',
   cspell: '^10.0.0',
+  knip: '^5.0.0',
 };
 
 const TYPESCRIPT_DEV_DEPS = {
@@ -24,16 +31,26 @@ const TYPESCRIPT_DEV_DEPS = {
   typescript: '^5.0.0',
 };
 
+const CHECKJS_DEV_DEPS = {
+  typescript: '^5.0.0',
+};
+
 const BASE_SCRIPTS = {
   'lint:eslint': 'eslint .',
   'lint:cspell': 'cspell "**/*.{ts,tsx,mjs,js,md,json}" --no-progress',
+  'lint:knip': 'knip',
   format: 'prettier --write .',
   'format:check': 'prettier --check .',
   'ci:lint': 'node scripts/ci/lint.script.mjs',
+  'ci:test': 'node scripts/ci/test.script.mjs',
 };
 
 const TYPESCRIPT_SCRIPTS = {
   'lint:tsc': 'tsc --noEmit',
+};
+
+const BUILD_SCRIPTS = {
+  'lint:build': 'npm run build',
 };
 
 /**
@@ -86,6 +103,7 @@ function detectTypeScript(cwd) {
  * @property {string} cwd
  * @property {boolean} force
  * @property {boolean} dryRun
+ * @property {boolean} jsTypecheck
  */
 
 /**
@@ -136,8 +154,10 @@ function writeFileSafe(filePath, contents, opts) {
  * @param {InitOptions} opts
  * @param {'npm' | 'pnpm'} packageManager
  * @param {boolean} hasTypeScript
+ * @param {boolean} enableJsTypecheck
+ * @returns {Record<string, unknown>}
  */
-function updatePackageJson(cwd, opts, packageManager, hasTypeScript) {
+function updatePackageJson(cwd, opts, packageManager, hasTypeScript, enableJsTypecheck) {
   const pkgPath = path.join(cwd, 'package.json');
   if (!fs.existsSync(pkgPath)) {
     throw new Error('No package.json found. Run npm init / pnpm init first.');
@@ -147,8 +167,22 @@ function updatePackageJson(cwd, opts, packageManager, hasTypeScript) {
   pkg.scripts = pkg.scripts ?? {};
   pkg.devDependencies = pkg.devDependencies ?? {};
 
-  const scripts = hasTypeScript ? { ...BASE_SCRIPTS, ...TYPESCRIPT_SCRIPTS } : BASE_SCRIPTS;
-  const devDeps = hasTypeScript ? { ...BASE_DEV_DEPS, ...TYPESCRIPT_DEV_DEPS } : BASE_DEV_DEPS;
+  /** @type {Record<string, string>} */
+  const scripts = { ...BASE_SCRIPTS };
+  /** @type {Record<string, string>} */
+  const devDeps = { ...BASE_DEV_DEPS };
+
+  if (hasTypeScript) {
+    Object.assign(scripts, TYPESCRIPT_SCRIPTS);
+    Object.assign(devDeps, TYPESCRIPT_DEV_DEPS);
+  } else if (enableJsTypecheck) {
+    Object.assign(scripts, TYPESCRIPT_SCRIPTS);
+    Object.assign(devDeps, CHECKJS_DEV_DEPS);
+  }
+
+  if (pkg.scripts.build != null) {
+    Object.assign(scripts, BUILD_SCRIPTS);
+  }
 
   for (const [name, cmd] of Object.entries(scripts)) {
     if (pkg.scripts[name] == null) {
@@ -173,13 +207,20 @@ function updatePackageJson(cwd, opts, packageManager, hasTypeScript) {
     console.log('field + prettier -> @crimsonsunset/prettier-config');
   }
 
+  // eslint-plugin-n reads engines; missing field silently validates against Node 16.
+  if (!pkg.engines?.node) {
+    pkg.engines = { ...pkg.engines, node: '>=22.18.0' };
+    console.log('field + engines.node -> >=22.18.0');
+  }
+
   const next = `${JSON.stringify(pkg, null, 2)}\n`;
   if (opts.dryRun) {
     console.log(`write package.json (dry-run, package-manager=${packageManager})`);
-    return;
+    return pkg;
   }
   fs.writeFileSync(pkgPath, next, 'utf8');
   console.log(`write package.json (package-manager=${packageManager})`);
+  return pkg;
 }
 
 /**
@@ -192,22 +233,39 @@ function updatePackageJson(cwd, opts, packageManager, hasTypeScript) {
 export async function runInit(opts) {
   const packageManager = detectPackageManager(opts.cwd);
   const hasTypeScript = detectTypeScript(opts.cwd);
+  const enableJsTypecheck = Boolean(opts.jsTypecheck) && !hasTypeScript;
+
+  if (opts.jsTypecheck && hasTypeScript) {
+    console.log(
+      'note: --js-typecheck ignored; TypeScript already detected (use tsconfig / lint:tsc path)\n',
+    );
+  }
+
   console.log(
-    `pr-quality init (cwd=${opts.cwd}, pm=${packageManager}, typescript=${hasTypeScript}, force=${opts.force}, dryRun=${opts.dryRun})\n`,
+    `pr-quality init (cwd=${opts.cwd}, pm=${packageManager}, typescript=${hasTypeScript}, jsTypecheck=${enableJsTypecheck}, force=${opts.force}, dryRun=${opts.dryRun})\n`,
   );
 
-  updatePackageJson(opts.cwd, opts, packageManager, hasTypeScript);
+  const pkg = updatePackageJson(opts.cwd, opts, packageManager, hasTypeScript, enableJsTypecheck);
 
+  const eslintTemplate = hasTypeScript ? 'eslint.config.type-checked.mjs' : 'eslint.config.mjs';
+
+  /** @type {Array<[string, string]>} */
   const files = [
-    ['eslint.config.mjs', 'eslint.config.mjs'],
+    [eslintTemplate, 'eslint.config.mjs'],
     ['prettierrc.json', '.prettierrc'],
     ['cspell.json', 'cspell.json'],
-    ...(hasTypeScript ? [['tsconfig.json', 'tsconfig.json']] : []),
     ['quality.on-pr.yml', path.join('.github', 'workflows', 'quality.on-pr.yml')],
     ['review.on-pr.yml', path.join('.github', 'workflows', 'review.on-pr.yml')],
     ['lint.script.mjs', path.join('scripts', 'ci', 'lint.script.mjs')],
+    ['test.script.mjs', path.join('scripts', 'ci', 'test.script.mjs')],
     ['prettierignore', '.prettierignore'],
   ];
+
+  if (hasTypeScript) {
+    files.splice(3, 0, ['tsconfig.json', 'tsconfig.json']);
+  } else if (enableJsTypecheck) {
+    files.splice(3, 0, ['tsconfig.checkjs.json', 'tsconfig.json']);
+  }
 
   for (const [templateName, relativePath] of files) {
     let contents = readTemplate(templateName);
@@ -217,11 +275,46 @@ export async function runInit(opts) {
     writeFileSafe(path.join(opts.cwd, relativePath), contents, opts);
   }
 
+  const knipCandidates = [
+    'knip.json',
+    'knip.jsonc',
+    '.knip.json',
+    'knip.js',
+    'knip.ts',
+    'knip.config.js',
+    'knip.config.ts',
+    'knip.config.mjs',
+  ];
+  const existingKnip = knipCandidates.find((name) => fs.existsSync(path.join(opts.cwd, name)));
+  if (existingKnip && !opts.force) {
+    console.log(`skip  knip.config.js (${existingKnip} exists, use --force)`);
+  } else {
+    if (existingKnip && opts.force && existingKnip !== 'knip.config.js') {
+      console.log(
+        `note: writing knip.config.js; remove ${existingKnip} if knip still picks it up first`,
+      );
+    }
+    const entry = deriveKnipEntry(pkg, opts.cwd);
+    writeFileSafe(path.join(opts.cwd, 'knip.config.js'), buildKnipConfig(entry), opts);
+    if (entry.length === 0) {
+      console.log(
+        'note: knip entry is empty — knip plugin inference may still work; add entry paths if needed',
+      );
+    }
+  }
+
+  if (enableJsTypecheck) {
+    console.log(`
+warning: --js-typecheck enables allowJs/checkJs. Existing untyped JS often
+produces a large first-run finding set; treat cleanup as part of adoption.
+`);
+  }
+
   console.log(`
 Done.
 Next:
   1. ${packageManager === 'pnpm' ? 'pnpm install' : 'npm install'}
-  2. Layer any repo-specific ESLint/tsconfig overrides on top of the stubs
+  2. Layer any repo-specific ESLint/tsconfig/knip overrides on top of the stubs
   3. Add OPENROUTER__KEY as a repo secret if you want PR-Agent review
   4. Open a PR to confirm the hub sticky report fires
 `);
