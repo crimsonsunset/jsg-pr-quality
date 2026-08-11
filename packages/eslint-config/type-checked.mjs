@@ -1,25 +1,15 @@
 import tseslint from 'typescript-eslint';
-
-const TS_FILES = ['**/*.{ts,tsx,mts,cts}'];
-
-/**
- * typescript-eslint's type-checked presets ship most rule entries unscoped
- * (`files: null`), so applying them as-is would require type info for every
- * matched file, including the consumer's own eslint.config.mjs. Scoping each
- * entry to TS files keeps type-aware rules off plain-JS/config files without
- * requiring the consumer to remember to do it themselves.
- * @param {import('eslint').Linter.Config[]} configs
- * @returns {import('eslint').Linter.Config[]}
- */
-function scopeToTsFiles(configs) {
-  return configs.map((config) => ({ ...config, files: config.files ?? TS_FILES }));
-}
+import { scopeToTsFiles } from './scope-to-ts-files.mjs';
 
 /**
- * Opt-in type-aware rules layered on top of the base config.
+ * Opt-in `strictTypeChecked` + `stylisticTypeChecked` tier.
+ * Prefer `@crimsonsunset/eslint-config/recommended-type-checked` for the
+ * default-on type-aware surface; use this export only when a nontrivial share
+ * of the team is highly proficient with TypeScript and wants the fuller
+ * `no-unsafe-*` / `no-unnecessary-condition` set.
+ *
  * Requires the consumer to point `languageOptions.parserOptions` at a real
- * tsconfig — this package can't assume that for plain-JS consumers, which is
- * why it isn't in the default export.
+ * tsconfig via `projectService`.
  *
  * @example
  * import base from '@crimsonsunset/eslint-config';

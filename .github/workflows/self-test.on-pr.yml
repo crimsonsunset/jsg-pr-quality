@@ -23,6 +23,7 @@ jobs:
       node-version: '22'
       package-manager: npm
       lint-script: ci:lint
+      test-script: ci:test
       eslint-flags: packages scripts
       run-reviewdog: true
 

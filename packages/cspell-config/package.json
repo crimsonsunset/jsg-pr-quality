@@ -1,6 +1,6 @@
 {
   "name": "@crimsonsunset/cspell-config",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shared cspell dictionary base for crimsonsunset repos",
   "main": "cspell.json",
   "exports": {

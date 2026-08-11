@@ -100,7 +100,9 @@ Hand-edit the stubs the CLI wrote:
 - `eslint.config.mjs` — put unique rules/ignores/globals back on top of `...base`
 - `tsconfig.json` — restore `paths`, `include`, project references
 - `cspell.json` — move repo vocabulary into local `words`
-- `scripts/ci/lint.script.mjs` — add repo-specific checks (build, knip) if the old orchestrator had them
+- `scripts/ci/lint.script.mjs` — discovery runs every `lint:*` script; keep custom gates as `lint:*` names
+- `knip.config.js` / existing `knip.json` — first knip run often needs a cleanup commit (unused deps/files)
+- `ci:test` — always wired; "none found" is expected until a suite exists
 
 ### 6. Verify locally
 
@@ -109,6 +111,7 @@ npm install   # or pnpm install
 npm run format:check
 npm run lint:eslint
 npm run ci:lint
+npm run ci:test
 ```
 
 Fix failures before opening a PR. Do not weaken shared rules to paper over real issues without calling that out.

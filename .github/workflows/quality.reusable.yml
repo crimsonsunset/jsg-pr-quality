@@ -43,6 +43,16 @@ on:
         type: boolean
         required: false
         default: true
+      test-script:
+        description: npm/pnpm script that runs the caller's test orchestrator
+        type: string
+        required: false
+        default: ci:test
+      run-tests:
+        description: Run the test job
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: read
@@ -71,12 +81,12 @@ jobs:
         id: audit
         if: inputs.package-manager == 'npm'
         continue-on-error: true
-        run: npm audit --audit-level=low
+        run: npm audit --audit-level=moderate --omit=dev
       - name: Dependency audit (pnpm)
         id: audit_pnpm
         if: inputs.package-manager == 'pnpm'
         continue-on-error: true
-        run: pnpm audit --audit-level=low
+        run: pnpm audit --audit-level=moderate --prod
       - if: |
           (inputs.package-manager == 'npm' && steps.audit.outcome == 'failure') ||
           (inputs.package-manager == 'pnpm' && steps.audit_pnpm.outcome == 'failure')
@@ -176,10 +186,52 @@ jobs:
       - if: steps.scan.outcome == 'failure'
         run: exit 1
 
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: [audit]
+    if: always() && inputs.run-tests && (needs.audit.result == 'success' || needs.audit.result == 'skipped')
+    outputs:
+      status: ${{ steps.tests.outputs.status || steps.tests_pnpm.outputs.status }}
+      summary: ${{ steps.tests.outputs.summary || steps.tests_pnpm.outputs.summary }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ inputs.package-manager }}
+      - name: Install (npm)
+        if: inputs.package-manager == 'npm'
+        env:
+          HUSKY: '0'
+        run: npm ci
+      - name: Install (pnpm)
+        if: inputs.package-manager == 'pnpm'
+        env:
+          HUSKY: '0'
+        run: pnpm install --frozen-lockfile
+      - name: Run tests (npm)
+        id: tests
+        if: inputs.package-manager == 'npm'
+        continue-on-error: true
+        run: npm run ${{ inputs.test-script }}
+      - name: Run tests (pnpm)
+        id: tests_pnpm
+        if: inputs.package-manager == 'pnpm'
+        continue-on-error: true
+        run: pnpm run ${{ inputs.test-script }}
+      - if: |
+          (inputs.package-manager == 'npm' && steps.tests.outcome == 'failure') ||
+          (inputs.package-manager == 'pnpm' && steps.tests_pnpm.outcome == 'failure')
+        run: exit 1
+
   report:
     name: PR Report
     if: always()
-    needs: [audit, quality, semgrep, gitleaks]
+    needs: [audit, quality, test, semgrep, gitleaks]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -195,6 +247,12 @@ jobs:
 
             **Setup failed** - could not run checks.' }}
 
+            ### Tests
+
+            | Check | Status |
+            | --- | --- |
+            | Tests | ${{ needs.test.result == 'skipped' && 'Skipped' || (needs.test.outputs.status == 'none' && 'None found' || (needs.test.result == 'success' && 'Passed' || '**Failed**')) }} |
+
             ### Security
 
             | Check | Status |
@@ -209,6 +267,7 @@ jobs:
         if: |
           (needs.audit.result != 'success' && needs.audit.result != 'skipped') ||
           needs.quality.result != 'success' ||
+          (needs.test.result != 'success' && needs.test.result != 'skipped') ||
           (needs.semgrep.result != 'success' && needs.semgrep.result != 'skipped') ||
           (needs.gitleaks.result != 'success' && needs.gitleaks.result != 'skipped')
         run: exit 1

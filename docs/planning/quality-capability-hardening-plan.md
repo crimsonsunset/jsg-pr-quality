@@ -1,6 +1,6 @@
 # Quality Capability Hardening Plan
 
-**Status:** Not started. Follows the capability audit of Aug 11, 2026; blocks the `karakeep-instagram-relay` dogfood.
+**Status:** Phases 1–5 implemented on `feat/quality-capability-hardening` (publish as `0.1.3`). Blocks the `karakeep-instagram-relay` dogfood until that tag ships.
 **Last updated:** Aug 11, 2026
 **Scope:** Raise what the hub actually *detects*, as opposed to how well it is assembled. Opens the orchestrator's closed check list, makes type-aware ESLint the default instead of an unused opt-in, gives plain-JS consumers a type-checking path, turns tests and knip into default-on gates (reversing two exclusions from the extraction plan), wires a build gate where one exists, and recalibrates `npm audit` so it stops being permanently red.
 **Related:** [PR Quality Hub Plan](./hub-extraction-plan.md) (built the hub this hardens — its Phase 6 dogfood depends on this work)
@@ -354,6 +354,42 @@ Ordered by bugs caught per unit of noise, which is also the order to add and val
 ---
 
 ## Progress Log
+
+### 2026-08-11 — Phase 5 done
+
+- Base ESLint now layers `eslint-plugin-n` (Node-scoped), `eslint-plugin-unicorn` (`unopinionated`), and `eslint-plugin-import-x`; peers declared with `>=` ranges
+- Disabled a short list of script/CLI false positives (`n/no-process-exit`, `n/hashbang`, `unicorn/prefer-top-level-await`, array-sort noise)
+- Audit recalibrated to `--audit-level=moderate --omit=dev` (pnpm `--prod`)
+- CLI writes `engines.node` when missing so `eslint-plugin-n` does not silently assume Node 16
+- Lockstep version bump to `0.1.3` (tag/publish still pending)
+
+### 2026-08-11 — Phase 4 done
+
+- Shipped `@crimsonsunset/knip-config` as an ES module (`project`/`ignore` only). Knip has no JSON `extends` and does not load `*.mjs` config names, so the CLI writes `knip.config.js`
+- CLI always wires `lint:knip` + derived `entry` (`main`/`bin`/`exports`, `scripts/**/*.mjs`, `src/index.*`); skips when any knip config already exists
+- CLI adds `lint:build` only when a `build` script is already present
+- Added `templates/js-project/` with `checkJs` on by default; hub dogfoods `lint:knip` via workspace-aware `knip.config.js`
+
+### 2026-08-11 — Phase 3 done
+
+- Added `test-script` (default `ci:test`) + `run-tests` (default true) and a `test` job to `quality.reusable.yml`
+- Sticky report gains a Tests row (`Passed` / `Failed` / `None found` / `Skipped`); required-jobs treats `none` as success
+- CLI always writes `ci:test` + `test.script.mjs`; hub dogfoods the same orchestrator
+- Locally verified all three suite states: none (exit 0), pass (exit 0), fail (exit 1)
+
+### 2026-08-11 — Phase 2 done
+
+- Added `@crimsonsunset/eslint-config/recommended-type-checked` (`recommendedTypeChecked` + `stylisticTypeChecked`); reframed `/type-checked` as the strict opt-in
+- Extracted shared `scopeToTsFiles` helper; CLI writes the type-aware eslint stub when TypeScript is detected
+- Added `--js-typecheck` (allowJs/checkJs tsconfig + `lint:tsc` + expected-findings warning); tooling/config paths excluded from checkJs
+- Smoke-tested: TS floating promise fails eslint; plain JS stays without `lint:tsc`; JS+`--js-typecheck` fails tsc on a deliberate type mismatch
+
+### 2026-08-11 — Phase 1 done
+
+- Replaced the fixed `CHECKS` array with `discoverChecks()` over `format:check` + every `lint:*` script
+- Label map covers Prettier / ESLint / TypeScript / cspell / Knip / Build; unknowns use the bare script name and sort alphabetically after known checks
+- Synced byte-identical copies to `packages/cli/templates/`, `scripts/ci/`, and `templates/ts-project/scripts/ci/`
+- Verified on a scratch repo: `lint:knip`, `lint:stylelint`, `lint:madeup`, and `lint:zzz` all ran and appeared in the sticky summary in the expected order
 
 ### 2026-08-11 — Plan written
 
