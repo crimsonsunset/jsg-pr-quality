@@ -8,6 +8,14 @@ concurrency:
   group: self-test-${{ github.ref }}
   cancel-in-progress: true
 
+# A called workflow can only narrow the caller's token, never widen it. Without
+# this block the caller falls back to the repo default (often contents-only),
+# and the reusable workflow's sticky report fails startup with
+# "requesting 'pull-requests: write', but is only allowed 'pull-requests: none'".
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   quality:
     uses: ./.github/workflows/quality.reusable.yml

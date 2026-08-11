@@ -56,6 +56,27 @@ uses: crimsonsunset/jsg-pr-quality/.github/workflows/quality.reusable.yml@v1
 
 Do not pin callers to `@master`.
 
+## Caller permissions (required)
+
+Every caller workflow must declare `permissions` explicitly:
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write # plus issues: write for review.reusable.yml
+```
+
+A called workflow can only _narrow_ the caller's token, never widen it. If the
+caller omits the block it inherits the repo default, which for most repos is
+contents-only, and the run dies at startup with:
+
+```
+The workflow is requesting 'pull-requests: write', but is only allowed 'pull-requests: none'
+```
+
+The CLI and the template both write this block already. Only hand-written
+callers can miss it.
+
 ## Publish (maintainers)
 
 Publishing uses **npm Trusted Publishing (OIDC)** — same pattern as
