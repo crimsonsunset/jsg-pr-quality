@@ -123,9 +123,11 @@ Fix failures before opening a PR. Do not weaken shared rules to paper over real 
 
 ### 7. Wire secrets + open a PR
 
-1. Ensure `OPENROUTER__KEY` exists (shared OpenRouter key named `pr-agent`; local
-   alias `OPENROUTER_KEY_PR_AGENT`). Do **not** mint a per-repo key — attribution
-   is via `.pr_agent.toml` headers, not separate keys.
+1. Ensure `OPENROUTER__KEY` exists. Shared OpenRouter key named `pr-agent`; local
+   value is `OPENROUTER_KEY_PR_AGENT` in `~/.cursor/secrets.env`. Wire it with:
+   `set -a; source ~/.cursor/secrets.env; set +a` then
+   `printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY`.
+   Do **not** mint a per-repo key — attribution is via `.pr_agent.toml` headers.
 2. Confirm hub tag `v1` exists on `crimsonsunset/jsg-pr-quality` (callers pin to it)
 3. Confirm each caller workflow kept its `permissions` block — a called workflow
    can only narrow the caller's token, so a caller missing `pull-requests: write`

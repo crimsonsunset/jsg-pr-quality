@@ -61,10 +61,17 @@ derived `entry`. Existing `knip.json` / `knip.config.*` files are left alone unl
 
 `init` also writes `.pr_agent.toml` and `.github/review-standards.md`. One shared
 OpenRouter key named **`pr-agent`** is reused across repos as the `OPENROUTER__KEY`
-secret (local env alias `OPENROUTER_KEY_PR_AGENT`). Per-repo spend shows up in
-OpenRouter analytics via attribution headers stamped from git origin / package.json:
+GitHub Actions secret. The plaintext value lives locally in
+`~/.cursor/secrets.env` as `OPENROUTER_KEY_PR_AGENT` — never commit it, never
+mint a per-repo key.
 
-`HTTP-Referer`, `X-OpenRouter-Title`, `X-Title`.
+```bash
+set -a; source ~/.cursor/secrets.env; set +a
+printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY
+```
+
+Per-repo spend shows up in OpenRouter analytics via attribution headers stamped
+from git origin / package.json: `HTTP-Referer`, `X-OpenRouter-Title`, `X-Title`.
 
 ## Extending shared configs with repo-specific vocabulary
 

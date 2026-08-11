@@ -3,7 +3,9 @@ model = "openrouter/anthropic/claude-sonnet-4"
 fallback_models = ["openrouter/deepseek/deepseek-chat"]
 custom_model_max_tokens = 128000
 
-# Shared OpenRouter key is `pr-agent` (OPENROUTER__KEY / OPENROUTER_KEY_PR_AGENT).
+# Shared OpenRouter key is `pr-agent`.
+# GitHub Actions secret: OPENROUTER__KEY
+# Local value: OPENROUTER_KEY_PR_AGENT in ~/.cursor/secrets.env
 # Per-repo identity is these headers — analytics group by `app`.
 # https://openrouter.ai/docs/app-attribution
 [litellm]

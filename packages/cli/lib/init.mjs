@@ -342,9 +342,13 @@ Done.
 Next:
   1. ${packageManager === 'pnpm' ? 'pnpm install' : 'npm install'}
   2. Layer any repo-specific ESLint/tsconfig/knip overrides on top of the stubs
-  3. Add OPENROUTER__KEY as a repo secret (shared OpenRouter key named \`pr-agent\`;
-     local env alias OPENROUTER_KEY_PR_AGENT). Attribution headers were stamped in
-     .pr_agent.toml — edit if the guessed name/URL is wrong.
+  3. Add OPENROUTER__KEY as a repo secret from the shared OpenRouter key named
+     \`pr-agent\`. Locally it lives in ~/.cursor/secrets.env as
+     OPENROUTER_KEY_PR_AGENT (never commit it). Example:
+       set -a; source ~/.cursor/secrets.env; set +a
+       printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY
+     Attribution headers were stamped in .pr_agent.toml — edit if the guessed
+     name/URL is wrong.
   4. Layer .github/review-standards.md with this repo's hard rules (and mirror them
      in .pr_agent.toml extra_instructions)
   5. Open a PR to confirm the sticky quality report + PR-Agent review both fire
