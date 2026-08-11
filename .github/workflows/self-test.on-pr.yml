@@ -15,6 +15,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   quality:
@@ -27,5 +28,9 @@ jobs:
       eslint-flags: packages scripts
       run-reviewdog: true
 
-  # Review job needs OPENROUTER__KEY; skip self-test of that path until the
-  # secret is present on this repo. Callers wire review.reusable.yml themselves.
+  # Needs repo secret OPENROUTER__KEY. Without it this job fails at secret
+  # resolution — same as any consumer that forgot to wire the key.
+  review:
+    uses: ./.github/workflows/review.reusable.yml
+    secrets:
+      openrouter-key: ${{ secrets.OPENROUTER__KEY }}

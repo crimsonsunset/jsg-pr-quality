@@ -1,0 +1,39 @@
+[config]
+model = "openrouter/anthropic/claude-sonnet-4"
+fallback_models = ["openrouter/deepseek/deepseek-chat"]
+custom_model_max_tokens = 128000
+
+[litellm]
+extra_headers = '{"HTTP-Referer":"https://github.com/crimsonsunset/jsg-pr-quality","X-OpenRouter-Title":"jsg-pr-quality","X-Title":"jsg-pr-quality"}'
+
+[github_action_config]
+auto_review = true
+auto_describe = true
+auto_improve = true
+pr_actions = ["opened", "reopened", "synchronize", "ready_for_review"]
+
+[ignore]
+glob = [
+  "**/package-lock.json",
+  "docs/planning/**",
+  "templates/**/package-lock.json",
+]
+
+[pr_reviewer]
+extra_instructions = """
+Follow .github/review-standards.md. Hard rules for this hub repo:
+- Keep config packages thin; consumers layer overrides, do not fork the base.
+- Workflows stay SHA-pinned for third-party actions; no floating @main/@latest.
+- Caller templates must declare permissions explicitly (Decision #15).
+- Lockstep version bumps across workspace packages; no solo publishes.
+- Do NOT nitpick formatting or anything ESLint / Prettier / cspell already covers.
+- Skip docs/planning/** and generated lockfile noise.
+"""
+
+[pr_code_suggestions]
+extra_instructions = """
+Same standards as pr_reviewer. Prefer concrete, minimal diffs. Skip formatting-only suggestions.
+"""
+
+[pr_description]
+publish_labels = false
