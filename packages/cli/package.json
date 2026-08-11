@@ -4,7 +4,7 @@
   "description": "Init script that wires a repo onto jsg-pr-quality workflows and shared configs",
   "type": "module",
   "bin": {
-    "pr-quality": "./bin/pr-quality.mjs"
+    "pr-quality": "bin/pr-quality.mjs"
   },
   "files": [
     "bin",
