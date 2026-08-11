@@ -19,5 +19,14 @@
   "publishConfig": {
     "access": "public"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crimsonsunset/jsg-pr-quality.git"
+  },
+  "bugs": {
+    "url": "https://github.com/crimsonsunset/jsg-pr-quality/issues"
+  },
+  "homepage": "https://github.com/crimsonsunset/jsg-pr-quality#readme",
+  "author": "Joe Sangiorgio <jsangio1@gmail.com>"
 }

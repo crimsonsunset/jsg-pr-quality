@@ -58,19 +58,49 @@ Do not pin callers to `@master`.
 
 ## Publish (maintainers)
 
-Config packages + CLI are npm workspaces. First public publish:
+Publishing uses **npm Trusted Publishing (OIDC)** — same pattern as
+[`jsg-logger`](https://github.com/crimsonsunset/jsg-logger). No `NPM_TOKEN`.
 
-```bash
-npm publish -w @crimsonsunset/eslint-config --access public
-npm publish -w @crimsonsunset/prettier-config --access public
-npm publish -w @crimsonsunset/cspell-config --access public
-npm publish -w @crimsonsunset/tsconfig-base --access public
-npm publish -w @crimsonsunset/pr-quality-cli --access public
-```
+Workflow: [`.github/workflows/publish.yml`](./.github/workflows/publish.yml)
 
-Tag the hub after the reusable workflows are stable:
+### First-time (packages do not exist on npm yet)
+
+Trusted Publishing can only be configured on a package that already exists, so
+the first release of each package has to be pushed by hand.
+
+1. Local one-shot while logged in (`npm whoami`):
+
+   ```bash
+   npm publish --workspaces --access public
+   ```
+
+2. On [npmjs.com](https://www.npmjs.com), for **each** of those 5 packages →
+   **Settings → Trusted Publisher → GitHub Actions**, with:
+
+   | Field                | Value            |
+   | -------------------- | ---------------- |
+   | Organization or user | `crimsonsunset`  |
+   | Repository           | `jsg-pr-quality` |
+   | Workflow filename    | `publish.yml`    |
+   | Environment name     | _(leave empty)_  |
+   | Allowed actions      | `npm publish`    |
+
+3. Future releases: bump workspace package versions, commit, then:
+
+   ```bash
+   git tag v0.1.1   # must be semver vX.Y.Z — not bare v1
+   git push origin v0.1.1
+   ```
+
+   That tag triggers CI publish via OIDC.
+
+### Actions tag (separate from npm)
+
+Callers pin reusable workflows to `@v1`. That tag is **not** an npm release:
 
 ```bash
 git tag v1
 git push origin v1
 ```
+
+`publish.yml` only matches `v*.*.*`, so bare `v1` will not try to publish to npm.
