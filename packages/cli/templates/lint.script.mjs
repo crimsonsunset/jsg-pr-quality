@@ -3,6 +3,8 @@
 /**
  * CI lint runner.
  * Runs each quality check individually so all checks complete even if one fails.
+ * Only runs checks whose npm script exists in package.json, so JS-only repos
+ * (no tsconfig.json, no lint:tsc script) skip TypeScript cleanly.
  * Writes a formatted summary to $GITHUB_OUTPUT.
  * Exits non-zero if any blocking check failed.
  */
@@ -48,19 +50,6 @@ function runNpmScript(script) {
   return (result.status ?? 1) === 0 ? 'passed' : 'failed';
 }
 
-const format = runNpmScript('format:check');
-const eslint = runNpmScript('lint:eslint');
-const typescript = runNpmScript('lint:tsc');
-const cspell = runNpmScript('lint:cspell');
-
-setOutput('format', format);
-setOutput('eslint', eslint);
-setOutput('typescript', typescript);
-setOutput('cspell', cspell);
-
-const blocking = [format, eslint, typescript, cspell];
-const allPassed = blocking.every((r) => r === 'passed');
-
 /**
  * Formats a check result for the sticky markdown table.
  * @param {CheckResult} result
@@ -70,6 +59,26 @@ function statusLine(result) {
   return result === 'passed' ? 'Passed' : '**Failed**';
 }
 
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+const CHECKS = [
+  { key: 'format', script: 'format:check', label: 'Prettier' },
+  { key: 'eslint', script: 'lint:eslint', label: 'ESLint' },
+  { key: 'typescript', script: 'lint:tsc', label: 'TypeScript' },
+  { key: 'cspell', script: 'lint:cspell', label: 'cspell' },
+];
+
+const results = CHECKS.filter((check) => pkg.scripts?.[check.script] != null).map((check) => ({
+  ...check,
+  result: runNpmScript(check.script),
+}));
+
+for (const { key, result } of results) {
+  setOutput(key, result);
+}
+
+const allPassed = results.every(({ result }) => result === 'passed');
+
 const summary = [
   '### Quality',
   '',
@@ -77,10 +86,7 @@ const summary = [
   '',
   '| Check | Status |',
   '| --- | --- |',
-  `| Prettier | ${statusLine(format)} |`,
-  `| ESLint | ${statusLine(eslint)} |`,
-  `| TypeScript | ${statusLine(typescript)} |`,
-  `| cspell | ${statusLine(cspell)} |`,
+  ...results.map(({ label, result }) => `| ${label} | ${statusLine(result)} |`),
 ].join('\n');
 
 setMultilineOutput('summary', summary);

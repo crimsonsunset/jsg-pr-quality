@@ -7,7 +7,8 @@ export default tseslint.config(
     ignores: ['templates/**', 'packages/cli/templates/**', 'docs/**'],
   },
   {
-    files: ['packages/cli/**/*.mjs', 'scripts/**/*.mjs'],
+    // scripts/**/*.mjs Node globals now come from the shared base config.
+    files: ['packages/cli/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',

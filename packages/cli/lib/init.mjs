@@ -5,28 +5,81 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 
-const CONFIG_DEV_DEPS = {
+const BASE_DEV_DEPS = {
   '@crimsonsunset/eslint-config': '^0.1.0',
   '@crimsonsunset/prettier-config': '^0.1.0',
   '@crimsonsunset/cspell-config': '^0.1.0',
-  '@crimsonsunset/tsconfig-base': '^0.1.0',
   '@eslint/js': '^10.0.0',
   eslint: '^10.0.0',
   'eslint-config-prettier': '^10.0.0',
   prettier: '^3.0.0',
+  // typescript-eslint's tseslint.config() wrapper is used by the eslint config
+  // template regardless of TS usage — it's a plain flat-config array composer.
   'typescript-eslint': '^8.0.0',
-  typescript: '^5.0.0',
   cspell: '^10.0.0',
 };
 
-const DEFAULT_SCRIPTS = {
+const TYPESCRIPT_DEV_DEPS = {
+  '@crimsonsunset/tsconfig-base': '^0.1.0',
+  typescript: '^5.0.0',
+};
+
+const BASE_SCRIPTS = {
   'lint:eslint': 'eslint .',
-  'lint:tsc': 'tsc --noEmit',
   'lint:cspell': 'cspell "**/*.{ts,tsx,mjs,js,md,json}" --no-progress',
   format: 'prettier --write .',
   'format:check': 'prettier --check .',
   'ci:lint': 'node scripts/ci/lint.script.mjs',
 };
+
+const TYPESCRIPT_SCRIPTS = {
+  'lint:tsc': 'tsc --noEmit',
+};
+
+/**
+ * ponytail: bounded recursive scan, skips the usual heavy directories.
+ * Ceiling: won't see .ts files nested more than 6 levels deep, or inside a
+ * custom build/output dir not in the skip list. Fine for detecting "does this
+ * repo use TypeScript at all"; not a general-purpose file walker.
+ * @param {string} dir
+ * @param {number} depth
+ * @returns {boolean}
+ */
+function hasTsFiles(dir, depth = 0) {
+  if (depth > 6) return false;
+  const skipDirs = new Set(['node_modules', '.git', 'dist', 'build', 'coverage']);
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (skipDirs.has(entry.name)) continue;
+      if (hasTsFiles(path.join(dir, entry.name), depth + 1)) return true;
+    } else if (/\.(ts|tsx|mts|cts)$/.test(entry.name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Detects whether the target repo already uses TypeScript, so `init` can skip
+ * writing tsconfig.json / lint:tsc for plain-JS repos.
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+function detectTypeScript(cwd) {
+  if (fs.existsSync(path.join(cwd, 'tsconfig.json'))) return true;
+  const pkgPath = path.join(cwd, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    if (pkg.devDependencies?.typescript ?? pkg.dependencies?.typescript) return true;
+  }
+  return hasTsFiles(cwd);
+}
 
 /**
  * @typedef {object} InitOptions
@@ -82,8 +135,9 @@ function writeFileSafe(filePath, contents, opts) {
  * @param {string} cwd
  * @param {InitOptions} opts
  * @param {'npm' | 'pnpm'} packageManager
+ * @param {boolean} hasTypeScript
  */
-function updatePackageJson(cwd, opts, packageManager) {
+function updatePackageJson(cwd, opts, packageManager, hasTypeScript) {
   const pkgPath = path.join(cwd, 'package.json');
   if (!fs.existsSync(pkgPath)) {
     throw new Error('No package.json found. Run npm init / pnpm init first.');
@@ -93,7 +147,10 @@ function updatePackageJson(cwd, opts, packageManager) {
   pkg.scripts = pkg.scripts ?? {};
   pkg.devDependencies = pkg.devDependencies ?? {};
 
-  for (const [name, cmd] of Object.entries(DEFAULT_SCRIPTS)) {
+  const scripts = hasTypeScript ? { ...BASE_SCRIPTS, ...TYPESCRIPT_SCRIPTS } : BASE_SCRIPTS;
+  const devDeps = hasTypeScript ? { ...BASE_DEV_DEPS, ...TYPESCRIPT_DEV_DEPS } : BASE_DEV_DEPS;
+
+  for (const [name, cmd] of Object.entries(scripts)) {
     if (pkg.scripts[name] == null) {
       pkg.scripts[name] = cmd;
       console.log(`script + ${name}`);
@@ -102,7 +159,7 @@ function updatePackageJson(cwd, opts, packageManager) {
     }
   }
 
-  for (const [name, version] of Object.entries(CONFIG_DEV_DEPS)) {
+  for (const [name, version] of Object.entries(devDeps)) {
     if (pkg.devDependencies[name] == null && pkg.dependencies?.[name] == null) {
       pkg.devDependencies[name] = version;
       console.log(`dep    + ${name}@${version}`);
@@ -134,17 +191,18 @@ function updatePackageJson(cwd, opts, packageManager) {
  */
 export async function runInit(opts) {
   const packageManager = detectPackageManager(opts.cwd);
+  const hasTypeScript = detectTypeScript(opts.cwd);
   console.log(
-    `pr-quality init (cwd=${opts.cwd}, pm=${packageManager}, force=${opts.force}, dryRun=${opts.dryRun})\n`,
+    `pr-quality init (cwd=${opts.cwd}, pm=${packageManager}, typescript=${hasTypeScript}, force=${opts.force}, dryRun=${opts.dryRun})\n`,
   );
 
-  updatePackageJson(opts.cwd, opts, packageManager);
+  updatePackageJson(opts.cwd, opts, packageManager, hasTypeScript);
 
   const files = [
     ['eslint.config.mjs', 'eslint.config.mjs'],
     ['prettierrc.json', '.prettierrc'],
     ['cspell.json', 'cspell.json'],
-    ['tsconfig.json', 'tsconfig.json'],
+    ...(hasTypeScript ? [['tsconfig.json', 'tsconfig.json']] : []),
     ['quality.on-pr.yml', path.join('.github', 'workflows', 'quality.on-pr.yml')],
     ['review.on-pr.yml', path.join('.github', 'workflows', 'review.on-pr.yml')],
     ['lint.script.mjs', path.join('scripts', 'ci', 'lint.script.mjs')],

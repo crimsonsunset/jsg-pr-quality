@@ -36,6 +36,17 @@ export default tseslint.config(
       ],
     },
   },
+  // Node-context tooling scripts (e.g. the ci:lint runner this hub's CLI
+  // writes into every consumer) — not covered by a browser/DOM lib.
+  {
+    files: ['scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+  },
   // Disable ESLint formatting rules that conflict with Prettier.
   eslintConfigPrettier,
 );
