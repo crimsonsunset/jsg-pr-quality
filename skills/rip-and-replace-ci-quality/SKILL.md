@@ -32,8 +32,32 @@ Inspect and inventory:
 - Existing workflows under `.github/workflows/`
 - Existing `scripts/ci/*` orchestrators
 - Whether `ci:lint` / `format:check` already exist in `package.json`
+- Installed ESLint major version, and whether config is `.eslintrc*` or `eslint.config.*`
 
 Report the inventory to the user before deleting anything.
+
+### 1a. ESLint version pre-flight
+
+The shared config requires **ESLint 10+**. ESLint 9 reached end-of-life on 2026-08-06 and
+v10 removed the `.eslintrc` format outright, so a repo on 8 or 9 needs a major-version
+migration before anything else in this skill applies.
+
+```bash
+npx eslint --version
+ls .eslintrc* eslint.config.* 2>/dev/null
+```
+
+If the repo is on ESLint 8 or 9:
+
+1. Tell the user this is a major upgrade, not a config swap, and get agreement first
+2. `npx @eslint/migrate-config .eslintrc.json` to mechanically convert, then delete
+   `.eslintrc*` and `.eslintignore` (ignores move into the config's `ignores` array)
+3. Expect new findings from three rules v10 added to `eslint:recommended`:
+   `no-unassigned-vars`, `no-useless-assignment`, `preserve-caught-error`
+4. Land the v10 upgrade as its own commit before running the CLI, so the hub adoption
+   diff stays readable
+
+If the repo is already on v10 with a flat config, skip straight to step 2.
 
 ### 2. Decide what is safe to remove
 
