@@ -90,8 +90,11 @@ The CLI is additive-only by default. It writes:
 
 - config stubs extending `@crimsonsunset/*`
 - `.github/workflows/quality.on-pr.yml` + `review.on-pr.yml` pinned to `@v1`
-- `scripts/ci/lint.script.mjs` if missing
-- missing `lint:*` / `format*` / `ci:lint` scripts + config package devDeps
+- `.pr_agent.toml` with shared-key comment + per-repo OpenRouter attribution headers
+  (`HTTP-Referer` / `X-OpenRouter-Title` / `X-Title` derived from git origin or package.json)
+- `.github/review-standards.md` stub (layer repo-specific hard rules here)
+- `scripts/ci/lint.script.mjs` / `test.script.mjs` if missing
+- missing `lint:*` / `format*` / `ci:lint` / `ci:test` scripts + config package devDeps
 
 ### 5. Re-apply repo-specific overrides
 
@@ -103,6 +106,8 @@ Hand-edit the stubs the CLI wrote:
 - `scripts/ci/lint.script.mjs` — discovery runs every `lint:*` script; keep custom gates as `lint:*` names
 - `knip.config.js` / existing `knip.json` — first knip run often needs a cleanup commit (unused deps/files)
 - `ci:test` — always wired; "none found" is expected until a suite exists
+- `.pr_agent.toml` — confirm attribution headers match this repo; expand `extra_instructions`
+- `.github/review-standards.md` — add this repo's hard rules; keep in sync with `.pr_agent.toml`
 
 ### 6. Verify locally
 
@@ -118,12 +123,15 @@ Fix failures before opening a PR. Do not weaken shared rules to paper over real 
 
 ### 7. Wire secrets + open a PR
 
-1. Ensure `OPENROUTER__KEY` exists if using `review.on-pr.yml`
+1. Ensure `OPENROUTER__KEY` exists (shared OpenRouter key named `pr-agent`; local
+   alias `OPENROUTER_KEY_PR_AGENT`). Do **not** mint a per-repo key — attribution
+   is via `.pr_agent.toml` headers, not separate keys.
 2. Confirm hub tag `v1` exists on `crimsonsunset/jsg-pr-quality` (callers pin to it)
 3. Confirm each caller workflow kept its `permissions` block — a called workflow
    can only narrow the caller's token, so a caller missing `pull-requests: write`
    fails at startup with `but is only allowed 'pull-requests: none'`
-4. Open a PR and confirm the sticky quality report + reviewdog annotations fire
+4. Open a PR and confirm the sticky quality report, reviewdog annotations, **and**
+   PR-Agent review all fire
 
 ## Hard rules
 

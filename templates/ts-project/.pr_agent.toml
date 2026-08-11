@@ -1,0 +1,42 @@
+[config]
+model = "openrouter/anthropic/claude-sonnet-4"
+fallback_models = ["openrouter/deepseek/deepseek-chat"]
+custom_model_max_tokens = 128000
+
+# Shared OpenRouter key is `pr-agent` (OPENROUTER__KEY / OPENROUTER_KEY_PR_AGENT).
+# Per-repo identity is these headers — analytics group by `app`.
+# https://openrouter.ai/docs/app-attribution
+[litellm]
+extra_headers = '{"HTTP-Referer":"https://github.com/crimsonsunset/ts-project-template","X-OpenRouter-Title":"ts-project-template","X-Title":"ts-project-template"}'
+
+[github_action_config]
+auto_review = true
+auto_describe = true
+auto_improve = true
+pr_actions = ["opened", "reopened", "synchronize", "ready_for_review"]
+
+[ignore]
+glob = [
+  "**/package-lock.json",
+  "**/pnpm-lock.yaml",
+  "dist/**",
+  "coverage/**",
+  "docs/planning/**",
+]
+
+[pr_reviewer]
+extra_instructions = """
+Follow .github/review-standards.md. Hard rules for this repo:
+- Do NOT nitpick formatting, style, or anything ESLint / tsc / Prettier / cspell already covers.
+- Prefer concrete, minimal suggestions over drive-by refactors.
+- Skip lockfiles, build output, and docs/planning/**.
+- Layer repo-specific conventions into .github/review-standards.md and mirror them here.
+"""
+
+[pr_code_suggestions]
+extra_instructions = """
+Same standards as pr_reviewer. Prefer concrete, minimal diffs. Skip formatting-only suggestions.
+"""
+
+[pr_description]
+publish_labels = false

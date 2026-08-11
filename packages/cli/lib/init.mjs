@@ -3,6 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildKnipConfig, deriveKnipEntry } from './knip-entry.helpers.mjs';
+import {
+  deriveRepoIdentity,
+  renderPrAgentToml,
+  renderReviewStandards,
+} from './pr-agent-attribution.helpers.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
@@ -277,6 +282,26 @@ export async function runInit(opts) {
     writeFileSafe(path.join(opts.cwd, relativePath), contents, opts);
   }
 
+  const identity = deriveRepoIdentity(pkg, opts.cwd);
+  console.log(
+    `pr-agent attribution (${identity.source}): name=${identity.name} url=${identity.url}`,
+  );
+  if (identity.source === 'cwd') {
+    console.log(
+      'note: guessed GitHub URL from package/dir name — edit .pr_agent.toml headers if wrong',
+    );
+  }
+  writeFileSafe(
+    path.join(opts.cwd, '.pr_agent.toml'),
+    renderPrAgentToml(readTemplate('pr_agent.toml'), identity),
+    opts,
+  );
+  writeFileSafe(
+    path.join(opts.cwd, '.github', 'review-standards.md'),
+    renderReviewStandards(readTemplate('review-standards.md'), identity),
+    opts,
+  );
+
   const knipCandidates = [
     'knip.json',
     'knip.jsonc',
@@ -317,7 +342,11 @@ Done.
 Next:
   1. ${packageManager === 'pnpm' ? 'pnpm install' : 'npm install'}
   2. Layer any repo-specific ESLint/tsconfig/knip overrides on top of the stubs
-  3. Add OPENROUTER__KEY as a repo secret if you want PR-Agent review
-  4. Open a PR to confirm the hub sticky report fires
+  3. Add OPENROUTER__KEY as a repo secret (shared OpenRouter key named \`pr-agent\`;
+     local env alias OPENROUTER_KEY_PR_AGENT). Attribution headers were stamped in
+     .pr_agent.toml — edit if the guessed name/URL is wrong.
+  4. Layer .github/review-standards.md with this repo's hard rules (and mirror them
+     in .pr_agent.toml extra_instructions)
+  5. Open a PR to confirm the sticky quality report + PR-Agent review both fire
 `);
 }

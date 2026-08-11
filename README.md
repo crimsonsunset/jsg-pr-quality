@@ -57,6 +57,15 @@ there is no suite) and `knip.config.js` extending `@crimsonsunset/knip-config` w
 derived `entry`. Existing `knip.json` / `knip.config.*` files are left alone unless
 `--force`.
 
+## PR-Agent (shared OpenRouter key)
+
+`init` also writes `.pr_agent.toml` and `.github/review-standards.md`. One shared
+OpenRouter key named **`pr-agent`** is reused across repos as the `OPENROUTER__KEY`
+secret (local env alias `OPENROUTER_KEY_PR_AGENT`). Per-repo spend shows up in
+OpenRouter analytics via attribution headers stamped from git origin / package.json:
+
+`HTTP-Referer`, `X-OpenRouter-Title`, `X-Title`.
+
 ## Extending shared configs with repo-specific vocabulary
 
 `@crimsonsunset/cspell-config` only ships words genuinely shared across every hub consumer

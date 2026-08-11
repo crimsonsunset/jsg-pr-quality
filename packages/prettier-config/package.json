@@ -1,6 +1,6 @@
 {
   "name": "@crimsonsunset/prettier-config",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Shared Prettier config for crimsonsunset repos",
   "type": "module",
   "main": "index.js",
