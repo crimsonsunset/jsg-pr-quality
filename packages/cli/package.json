@@ -1,6 +1,6 @@
 {
   "name": "@crimsonsunset/pr-quality-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Init script that wires a repo onto jsg-pr-quality workflows and shared configs",
   "type": "module",
   "bin": {
