@@ -3,6 +3,9 @@ model = "openrouter/anthropic/claude-sonnet-4"
 fallback_models = ["openrouter/deepseek/deepseek-chat"]
 custom_model_max_tokens = 128000
 
+# Shared OpenRouter key is `pr-agent` (OPENROUTER__KEY / OPENROUTER_KEY_PR_AGENT).
+# Per-repo identity is these headers — analytics group by `app`.
+# https://openrouter.ai/docs/app-attribution
 [litellm]
 extra_headers = '{"HTTP-Referer":"https://github.com/crimsonsunset/jsg-pr-quality","X-OpenRouter-Title":"jsg-pr-quality","X-Title":"jsg-pr-quality"}'
 
