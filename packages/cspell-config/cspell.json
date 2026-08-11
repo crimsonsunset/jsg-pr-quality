@@ -2,16 +2,15 @@
   "version": "0.2",
   "language": "en",
   "words": [
-    "bugbot",
     "byok",
     "crimsonsunset",
     "cspell",
+    "ghdelim",
     "gitleaks",
     "knip",
-    "marocchino",
-    "openrouter",
-    "pragent",
+    "lockfiles",
     "reviewdog",
+    "Sangiorgio",
     "semgrep",
     "tseslint",
     "typecheck"
@@ -22,8 +21,6 @@
     "coverage/**",
     "package-lock.json",
     "pnpm-lock.yaml",
-    "docs/planning/**",
-    ".cursor/**",
     "*.log"
   ],
   "dictionaries": [

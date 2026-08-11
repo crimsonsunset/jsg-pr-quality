@@ -48,11 +48,13 @@ function runNpmScript(script) {
 
 const format = runNpmScript('format:check');
 const eslint = runNpmScript('lint:eslint');
+const cspell = runNpmScript('lint:cspell');
 
 setOutput('format', format);
 setOutput('eslint', eslint);
+setOutput('cspell', cspell);
 
-const blocking = [format, eslint];
+const blocking = [format, eslint, cspell];
 const allPassed = blocking.every((r) => r === 'passed');
 
 /**
@@ -73,6 +75,7 @@ const summary = [
   '| --- | --- |',
   `| Prettier | ${statusLine(format)} |`,
   `| ESLint | ${statusLine(eslint)} |`,
+  `| cspell | ${statusLine(cspell)} |`,
 ].join('\n');
 
 setMultilineOutput('summary', summary);

@@ -6,6 +6,9 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022"],
     "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "resolveJsonModule": true,
     "noEmit": true,
     "skipLibCheck": true,
     "isolatedModules": true,
@@ -15,5 +18,8 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true
+    // exactOptionalPropertyTypes is deliberately omitted: it changes
+    // { x?: number } to reject { x: undefined }, which is opinionated enough
+    // to surprise consumers. Add it per-repo if you want it.
   }
 }

@@ -13,13 +13,16 @@
   "scripts": {
     "ci:lint": "node scripts/ci/lint.script.mjs",
     "lint:eslint": "eslint packages scripts",
+    "lint:cspell": "cspell \"**/*.{mjs,js,md,json,yml}\" --no-progress",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@crimsonsunset/cspell-config": "*",
     "@crimsonsunset/eslint-config": "*",
     "@crimsonsunset/prettier-config": "*",
     "@eslint/js": "^10.0.1",
+    "cspell": "^10.0.1",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.6",

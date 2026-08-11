@@ -10,6 +10,9 @@
   "files": [
     "cspell.json"
   ],
+  "peerDependencies": {
+    "cspell": ">=8.0.0"
+  },
   "publishConfig": {
     "access": "public"
   },

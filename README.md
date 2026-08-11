@@ -27,6 +27,38 @@ cp -R templates/ts-project /path/to/my-new-repo
 cd /path/to/my-new-repo && npm install
 ```
 
+## Type-aware ESLint (opt-in)
+
+`@crimsonsunset/eslint-config`'s default export is untyped (`tseslint.configs.recommended`),
+so it works for plain-JS consumers with no tsconfig wiring. Repos that want type-aware rules
+(`no-floating-promises`, `no-unsafe-assignment`, etc.) layer the second export on top:
+
+```js
+import base from '@crimsonsunset/eslint-config';
+import typeChecked from '@crimsonsunset/eslint-config/type-checked';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(...base, ...typeChecked, {
+  files: ['**/*.{ts,tsx,mts,cts}'],
+  languageOptions: {
+    parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+  },
+});
+```
+
+## Extending shared configs with repo-specific vocabulary
+
+`@crimsonsunset/cspell-config` only ships words genuinely shared across every hub consumer
+(tool names from the reusable workflows, `tseslint`, the author's own name). Repo-specific
+vocabulary goes in your own `cspell.json`, which imports the base:
+
+```json
+{
+  "import": ["@crimsonsunset/cspell-config/cspell.json"],
+  "words": ["yourRepoSpecificTerm"]
+}
+```
+
 ## Hub layout
 
 ```
