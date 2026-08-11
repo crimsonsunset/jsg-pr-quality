@@ -1,6 +1,6 @@
 # Quality Capability Hardening Plan
 
-**Status:** Done. Phases 1–5 shipped and published as `0.1.3`. Unblocks the `karakeep-instagram-relay` dogfood (hub-extraction Phase 6).
+**Status:** Done. Phases 1–5 shipped; packages published as `0.1.4` (knip Trusted Publisher + lockstep republish after a broken `0.1.3` knip registry state). Unblocks the `karakeep-instagram-relay` dogfood (hub-extraction Phase 6).
 **Last updated:** Aug 11, 2026
 **Scope:** Raise what the hub actually *detects*, as opposed to how well it is assembled. Opens the orchestrator's closed check list, makes type-aware ESLint the default instead of an unused opt-in, gives plain-JS consumers a type-checking path, turns tests and knip into default-on gates (reversing two exclusions from the extraction plan), wires a build gate where one exists, and recalibrates `npm audit` so it stops being permanently red.
 **Related:** [PR Quality Hub Plan](./hub-extraction-plan.md) (built the hub this hardens — its Phase 6 dogfood depends on this work)
@@ -361,7 +361,7 @@ Ordered by bugs caught per unit of noise, which is also the order to add and val
 - Disabled a short list of script/CLI false positives (`n/no-process-exit`, `n/hashbang`, `unicorn/prefer-top-level-await`, array-sort noise)
 - Audit recalibrated to `--audit-level=moderate --omit=dev` (pnpm `--prod`)
 - CLI writes `engines.node` when missing so `eslint-plugin-n` does not silently assume Node 16
-- Lockstep version bump to `0.1.3`; published via `v0.1.3` tag (OIDC) after first-hand publish of `@crimsonsunset/knip-config`
+- Lockstep version bump to `0.1.3`; first-hand create of `@crimsonsunset/knip-config`, then Trusted Publisher attached. `v0.1.3` OIDC batch aborted mid-run and left knip in a bad registry state, so a lockstep `0.1.4` tag republished everything via OIDC
 
 ### 2026-08-11 — Phase 4 done
 
