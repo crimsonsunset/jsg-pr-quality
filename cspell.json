@@ -1,5 +1,5 @@
 {
   "import": ["@crimsonsunset/cspell-config/cspell.json"],
-  "words": ["checkjs", "marocchino"],
+  "words": ["automations", "bugbot", "checkjs", "jsangio", "marocchino", "thecrimsonsunset"],
   "ignorePaths": ["docs/planning/**", ".cursor/**"]
 }

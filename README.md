@@ -6,7 +6,8 @@ Reusable PR quality hub for crimsonsunset repos.
 - **Shareable configs** — `@crimsonsunset/eslint-config`, `prettier-config`, `cspell-config`, `tsconfig-base`, `knip-config`
 - **CLI** — `npx @crimsonsunset/pr-quality-cli init` (Node) writes stubs + thin callers (knip, tests, type-aware eslint when applicable)
 - **Templates** — [`templates/ts-project/`](./templates/ts-project/) (TS) and [`templates/js-project/`](./templates/js-project/) (JS + `checkJs`)
-- **Skill** — [`skills/rip-and-replace-ci-quality/`](./skills/rip-and-replace-ci-quality/) for existing repos
+- **Skill** — [`skills/rip-and-replace-ci-quality/`](./skills/rip-and-replace-ci-quality/) for existing repos (also enables [Bugbot](https://cursor.com/docs/bugbot))
+- **Reviews** — Cursor Bugbot, not PR-Agent. `init` writes `.cursor/BUGBOT.md`. The skill picks the Cursor account.
 
 Planning: [`docs/planning/hub-extraction-plan.md`](./docs/planning/hub-extraction-plan.md), capability hardening: [`docs/planning/quality-capability-hardening-plan.md`](./docs/planning/quality-capability-hardening-plan.md)
 
@@ -57,6 +58,16 @@ there is no suite) and `knip.config.js` extending `@crimsonsunset/knip-config` w
 derived `entry`. Existing `knip.json` / `knip.config.*` files are left alone unless
 `--force`.
 
+## Bugbot (PR review)
+
+`init` writes `.cursor/BUGBOT.md`. Enabling the reviewer is the adoption skill's
+job, not the CLI's. Default Bugbot owner is the `crimsonsunset` Cursor account
+(`thecrimsonsunset@gmail.com`). `crimsonsunset/*` repos use that without asking.
+Any other GitHub owner: the skill stops and asks, still recommending
+`crimsonsunset` unless the PR author is a different GitHub user. Set **run only
+once per PR** on that account. Do not enable the same repo on more than one
+account. Do not hop mid-month; overflow is on-demand on the Bugbot owner.
+
 ## Extending shared configs with repo-specific vocabulary
 
 `@crimsonsunset/cspell-config` only ships words genuinely shared across every hub consumer
@@ -73,6 +84,7 @@ vocabulary goes in your own `cspell.json`, which imports the base:
 ## Hub layout
 
 ```
+.cursor/BUGBOT.md          # Bugbot house rules (committed; not *.mdc)
 .github/
   workflows/
     quality.reusable.yml   # workflow_call — deterministic gates

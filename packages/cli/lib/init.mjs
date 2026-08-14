@@ -283,6 +283,11 @@ export async function runInit(opts) {
     renderReviewStandards(readTemplate('review-standards.md'), identity),
     opts,
   );
+  writeFileSafe(
+    path.join(opts.cwd, '.cursor', 'BUGBOT.md'),
+    readTemplate('BUGBOT.md'),
+    opts,
+  );
 
   const knipCandidates = [
     'knip.json',
@@ -324,7 +329,8 @@ Done.
 Next:
   1. ${packageManager === 'pnpm' ? 'pnpm install' : 'npm install'}
   2. Layer any repo-specific ESLint/tsconfig/knip overrides on top of the stubs
-  3. Layer .github/review-standards.md with this repo's hard rules
-  4. Open a PR to confirm the sticky quality report fires
+  3. Layer .github/review-standards.md and .cursor/BUGBOT.md with this repo's hard rules
+  4. Enable Bugbot on the Cursor account the adoption skill picked (default: crimsonsunset = thecrimsonsunset@gmail.com)
+  5. Open a PR to confirm the sticky quality report + a Bugbot review fire
 `);
 }
