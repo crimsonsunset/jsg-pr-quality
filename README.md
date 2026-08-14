@@ -59,9 +59,14 @@ derived `entry`. Existing `knip.json` / `knip.config.*` files are left alone unl
 
 ## PR-Agent (shared OpenRouter key)
 
-`init` also writes `.pr_agent.toml` and `.github/review-standards.md`. One shared
-OpenRouter key named **`pr-agent`** is reused across repos as the `OPENROUTER__KEY`
-GitHub Actions secret. The plaintext value lives locally in
+`init` also writes `.pr_agent.toml`, `AGENTS.md`, and `.github/review-standards.md`.
+Auto-run is `/review` only: describe, improve, ticket compliance, security
+all-clear, tests checkbox, and effort labels are off (they invent findings to
+fill empty slots). Branch names like `feature/1-auth` are not treated as issue
+`#1`. A clean PR stays silent (`publish_output_no_suggestions = false`).
+`num_max_findings = 10` is a ceiling, not a quota. One
+shared OpenRouter key named **`pr-agent`** is reused across repos as the
+`OPENROUTER__KEY` GitHub Actions secret. The plaintext value lives locally in
 `~/.cursor/secrets.env` as `OPENROUTER_KEY_PR_AGENT` — never commit it, never
 mint a per-repo key.
 
@@ -86,7 +91,12 @@ PR head.
 Adoption consequence: the first PR that *introduces* `.pr_agent.toml` still runs
 on Action defaults until that file merges. Merge (or land a tiny config-only PR
 to `main`/`master` first), then expect the configured `model` /
-`fallback_models` to stick.
+`fallback_models` to stick. `AGENTS.md` is the same story: `/review` injects it
+from the default branch (500-line cap). Keep `extra_instructions` short.
+
+On the first review PR, comment `/config` and read the dump before trusting the
+output. That shows the live model, flags, and whether the default-branch toml
+actually loaded.
 
 ## Extending shared configs with repo-specific vocabulary
 
@@ -104,6 +114,7 @@ vocabulary goes in your own `cspell.json`, which imports the base:
 ## Hub layout
 
 ```
+AGENTS.md                  # PR-Agent /review house rules (default branch)
 .github/
   workflows/
     quality.reusable.yml   # workflow_call — deterministic gates

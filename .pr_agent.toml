@@ -2,6 +2,10 @@
 model = "openrouter/anthropic/claude-sonnet-4"
 fallback_models = ["openrouter/deepseek/deepseek-chat"]
 custom_model_max_tokens = 128000
+# Default true maps feature/1-auth → issue #1 and invents ticket scores.
+extract_issue_from_branch = false
+# /review injects this from the default branch (500-line cap). Missing = skip.
+repo_context_files = ["AGENTS.md"]
 
 # Shared OpenRouter key is `pr-agent`.
 # GitHub Actions secret: OPENROUTER__KEY
@@ -17,8 +21,8 @@ extra_headers = '{"HTTP-Referer":"https://github.com/crimsonsunset/jsg-pr-qualit
 
 [github_action_config]
 auto_review = true
-auto_describe = true
-auto_improve = true
+auto_describe = false
+auto_improve = false
 pr_actions = ["opened", "reopened", "synchronize", "ready_for_review"]
 
 [ignore]
@@ -29,14 +33,18 @@ glob = [
 ]
 
 [pr_reviewer]
+require_ticket_analysis_review = false
+require_security_review = false
+require_tests_review = false
+require_estimate_effort_to_review = false
+enable_review_labels_security = false
+enable_review_labels_effort = false
+# Default true posts a "no major issues" comment on a clean PR.
+publish_output_no_suggestions = false
+# Ceiling, not a quota. Prompt already allows 0-N; do not pad to fill it.
+num_max_findings = 10
 extra_instructions = """
-Follow .github/review-standards.md. Hard rules for this hub repo:
-- Keep config packages thin; consumers layer overrides, do not fork the base.
-- Workflows stay SHA-pinned for third-party actions; no floating @main/@latest.
-- Caller templates must declare permissions explicitly (Decision #15).
-- Lockstep version bumps across workspace packages; no solo publishes.
-- Do NOT nitpick formatting or anything ESLint / Prettier / cspell already covers.
-- Skip docs/planning/** and generated lockfile noise.
+House rules are in AGENTS.md. Zero findings is valid. Do not invent issues.
 """
 
 [pr_code_suggestions]

@@ -301,6 +301,7 @@ export async function runInit(opts) {
     renderReviewStandards(readTemplate('review-standards.md'), identity),
     opts,
   );
+  writeFileSafe(path.join(opts.cwd, 'AGENTS.md'), readTemplate('AGENTS.md'), opts);
 
   const knipCandidates = [
     'knip.json',
@@ -349,11 +350,14 @@ Next:
        printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY
      Attribution headers were stamped in .pr_agent.toml — edit if the guessed
      name/URL is wrong.
-  4. Layer .github/review-standards.md with this repo's hard rules (and mirror them
-     in .pr_agent.toml extra_instructions)
-  5. Merge .pr_agent.toml to the default branch before expecting model overrides.
-     review.reusable.yml reads it via PR_AGENT_CONFIG_BRANCH=<default branch>;
-     until then PR-Agent silently uses the Action's gpt-5.6 defaults.
-  6. Open a PR to confirm the sticky quality report + PR-Agent review both fire
+  4. Layer AGENTS.md with this repo's hard rules (PR-Agent injects it on /review).
+     Keep extra_instructions short. .github/review-standards.md is human docs.
+  5. Merge .pr_agent.toml and AGENTS.md to the default branch before expecting
+     model overrides or house rules. review.reusable.yml reads toml via
+     PR_AGENT_CONFIG_BRANCH=<default branch>; until then PR-Agent silently uses
+     the Action's gpt-5.6 defaults. AGENTS.md is also read from the default branch.
+  6. Open a PR to confirm the sticky quality report + PR-Agent /review fire
+     (describe/improve and ticket/security checkboxes are off on purpose).
+     Comment /config on that PR and read the dump before trusting the review.
 `);
 }

@@ -12,5 +12,7 @@ npm install
 
 PR-Agent: set `OPENROUTER__KEY` from `OPENROUTER_KEY_PR_AGENT` in `~/.cursor/secrets.env`
 (`printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY`).
-Merge `.pr_agent.toml` to the default branch before expecting its `model` to apply —
-`review.reusable.yml` reads it via `PR_AGENT_CONFIG_BRANCH` (default branch only).
+Merge `.pr_agent.toml` and `AGENTS.md` to the default branch before expecting
+the configured `model` or house rules — `review.reusable.yml` reads toml via
+`PR_AGENT_CONFIG_BRANCH` (default branch only). Comment `/config` on the first
+review PR and read the dump.

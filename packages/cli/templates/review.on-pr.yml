@@ -19,6 +19,8 @@ jobs:
   # - v1-vs-SHA pin tradeoff
   # - PR_AGENT_CONFIG_BRANCH=<default branch> so .pr_agent.toml is loaded
   #   (must exist on the default branch; PR-head-only copies are ignored)
+  # - AGENTS.md is also read from the default branch (repo_context_files)
+  # - /review only; describe/improve + ticket/security/tests theater forced off
   review:
     uses: crimsonsunset/jsg-pr-quality/.github/workflows/review.reusable.yml@v1
     secrets:
