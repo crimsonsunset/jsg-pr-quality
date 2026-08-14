@@ -4,8 +4,8 @@ import { pathToFileURL } from 'node:url';
 
 /**
  * @typedef {object} RepoIdentity
- * @property {string} name Short app name for OpenRouter X-Title / X-OpenRouter-Title
- * @property {string} url HTTPS GitHub (or other) URL for HTTP-Referer
+ * @property {string} name Short app name
+ * @property {string} url HTTPS GitHub (or other) URL
  * @property {'git-remote' | 'package.json' | 'cwd'} source Where the identity was derived
  */
 
@@ -59,7 +59,7 @@ function gitOriginUrl(cwd) {
 }
 
 /**
- * Reads repository / homepage fields from package.json.
+ * Reads a repository URL from package.json `repository`.
  * @param {Record<string, unknown>} pkg
  * @returns {string | null}
  */
@@ -69,14 +69,10 @@ function packageRepoUrl(pkg) {
   if (repo && typeof repo === 'object' && typeof repo.url === 'string') {
     return normalizeRepoUrl(repo.url);
   }
-  if (typeof pkg.homepage === 'string' && pkg.homepage.includes('github.com')) {
-    return normalizeRepoUrl(pkg.homepage.replace(/#.*$/, ''));
-  }
   return null;
 }
 
 /**
- * Derives the OpenRouter app attribution identity for a consumer repo.
  * Prefer git origin, then package.json repository, then cwd basename.
  * @param {Record<string, unknown>} pkg
  * @param {string} cwd
@@ -106,18 +102,6 @@ export function deriveRepoIdentity(pkg, cwd) {
 }
 
 /**
- * Fills `__REPO_NAME__` / `__REPO_URL__` placeholders in a .pr_agent.toml template.
- * @param {string} template
- * @param {RepoIdentity} identity
- * @returns {string}
- */
-export function renderPrAgentToml(template, identity) {
-  return template
-    .replaceAll('__REPO_NAME__', identity.name)
-    .replaceAll('__REPO_URL__', identity.url);
-}
-
-/**
  * Fills `__REPO_NAME__` in a review-standards.md template.
  * @param {string} template
  * @param {RepoIdentity} identity
@@ -133,13 +117,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   if (normalized !== 'https://github.com/crimsonsunset/demo-repo') {
     throw new Error(`normalizeRepoUrl failed: ${normalized}`);
   }
-  const rendered = renderPrAgentToml('name=__REPO_NAME__ url=__REPO_URL__', {
+  const rendered = renderReviewStandards('PR review standards (__REPO_NAME__)', {
     name: 'demo-repo',
     url: 'https://github.com/crimsonsunset/demo-repo',
     source: 'cwd',
   });
-  if (!rendered.includes('demo-repo') || !rendered.includes('https://github.com')) {
-    throw new Error(`renderPrAgentToml failed: ${rendered}`);
+  if (!rendered.includes('demo-repo')) {
+    throw new Error(`renderReviewStandards failed: ${rendered}`);
   }
-  console.log('pr-agent-attribution.helpers: ok');
+  console.log('repo-identity.helpers: ok');
 }

@@ -89,11 +89,8 @@ npx @crimsonsunset/pr-quality-cli init             # or --force if overwriting
 The CLI is additive-only by default. It writes:
 
 - config stubs extending `@crimsonsunset/*`
-- `.github/workflows/quality.on-pr.yml` + `review.on-pr.yml` pinned to `@v1`
-- `.pr_agent.toml` with shared-key comment + per-repo OpenRouter attribution headers
-  (`HTTP-Referer` / `X-OpenRouter-Title` / `X-Title` derived from git origin or package.json)
-- `AGENTS.md` (PR-Agent injects this on `/review`; layer repo-specific hard rules here)
-- `.github/review-standards.md` stub (human docs; do not dump it into `extra_instructions`)
+- `.github/workflows/quality.on-pr.yml` pinned to `@v1`
+- `.github/review-standards.md` stub (human review notes)
 - `scripts/ci/lint.script.mjs` / `test.script.mjs` if missing
 - missing `lint:*` / `format*` / `ci:lint` / `ci:test` scripts + config package devDeps
 
@@ -107,9 +104,7 @@ Hand-edit the stubs the CLI wrote:
 - `scripts/ci/lint.script.mjs` — discovery runs every `lint:*` script; keep custom gates as `lint:*` names
 - `knip.config.js` / existing `knip.json` — first knip run often needs a cleanup commit (unused deps/files)
 - `ci:test` — always wired; "none found" is expected until a suite exists
-- `.pr_agent.toml` — confirm attribution headers match this repo; keep `extra_instructions` short
-- `AGENTS.md` — add this repo's hard rules (this is what `/review` actually injects)
-- `.github/review-standards.md` — human docs; do not dump the whole file into `extra_instructions`
+- `.github/review-standards.md` — add this repo's hard rules
 
 ### 6. Verify locally
 
@@ -123,30 +118,15 @@ npm run ci:test
 
 Fix failures before opening a PR. Do not weaken shared rules to paper over real issues without calling that out.
 
-### 7. Wire secrets + open a PR
+### 7. Open a PR
 
-1. Ensure `OPENROUTER__KEY` exists. Shared OpenRouter key named `pr-agent`; local
-   value is `OPENROUTER_KEY_PR_AGENT` in `~/.cursor/secrets.env`. Wire it with:
-   `set -a; source ~/.cursor/secrets.env; set +a` then
-   `printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY`.
-   Do **not** mint a per-repo key — attribution is via `.pr_agent.toml` headers.
-2. Confirm hub tag `v1` exists on `crimsonsunset/jsg-pr-quality` (callers pin to it)
-3. Confirm each caller workflow kept its `permissions` block — a called workflow
+1. Confirm hub tag `v1` exists on `crimsonsunset/jsg-pr-quality` (callers pin to it)
+2. Confirm each caller workflow kept its `permissions` block — a called workflow
    can only narrow the caller's token, so a caller missing `pull-requests: write`
    fails at startup with `but is only allowed 'pull-requests: none'`
-4. **Land `.pr_agent.toml` and `AGENTS.md` on the default branch before trusting
-   model overrides or house rules.** `review.reusable.yml` sets
-   `PR_AGENT_CONFIG_BRANCH` to the repo default branch. Without that env (older
-   hub pins) or without the file on the default branch, PR-Agent silently uses
-   the Action's built-in `gpt-5.6` defaults and ignores the PR-head copy of
-   `.pr_agent.toml`. `AGENTS.md` is also read from the default branch. Prefer a
-   tiny config-only merge first, then open the larger quality PR — or accept one
-   Action-default review on the adoption PR itself.
-5. Open a PR and confirm the sticky quality report, reviewdog annotations, **and**
-   a PR-Agent `/review` comment (no describe/improve, no ticket-compliance
-   score). In the PR-Agent job log, check `Generating prediction with …`
-   matches `.pr_agent.toml` `model` (not `gpt-5.6`). Comment `/config` on that
-   PR and read the dump before trusting the review.
+3. Open a PR and confirm the sticky quality report and reviewdog annotations.
+   Delete any leftover `.github/workflows/review.on-pr.yml` / `.pr_agent.toml`
+   from an older hub pin. Those callers will 404 once `v1` moves past PR-Agent.
 
 ## Hard rules
 
@@ -154,17 +134,12 @@ Fix failures before opening a PR. Do not weaken shared rules to paper over real 
 - Do not expand the CLI to delete files — teardown is this skill's job
 - Do not migrate application code, rename source trees, or change package managers
 - Stop and ask if a workflow file looks like it mixes quality gates with deploy/release steps
-- Do not claim PR-Agent is using `.pr_agent.toml` `model` until that file is on the
-  default branch and the hub's `review.reusable.yml` sets `PR_AGENT_CONFIG_BRANCH`
-  (verify via job log: `Generating prediction with …`)
 
 ## Hub paths (this repo)
 
 | Piece                     | Path                                          |
 | ------------------------- | --------------------------------------------- |
 | Reusable quality workflow | `.github/workflows/quality.reusable.yml`      |
-| Reusable review workflow  | `.github/workflows/review.reusable.yml`       |
-| PR-Agent house rules      | `AGENTS.md`                                   |
 | CLI                       | `packages/cli/`                               |
 | Config packages           | `packages/*-config`, `packages/tsconfig-base` |
 | Greenfield template       | `templates/ts-project/`                       |

@@ -2,7 +2,7 @@
 
 Reusable PR quality hub for crimsonsunset repos.
 
-- **Reusable workflows** — sticky quality report, Semgrep, gitleaks, `npm`/`pnpm` audit, PR-Agent
+- **Reusable workflows** — sticky quality report, Semgrep, gitleaks, `npm`/`pnpm` audit
 - **Shareable configs** — `@crimsonsunset/eslint-config`, `prettier-config`, `cspell-config`, `tsconfig-base`, `knip-config`
 - **CLI** — `npx @crimsonsunset/pr-quality-cli init` (Node) writes stubs + thin callers (knip, tests, type-aware eslint when applicable)
 - **Templates** — [`templates/ts-project/`](./templates/ts-project/) (TS) and [`templates/js-project/`](./templates/js-project/) (JS + `checkJs`)
@@ -57,47 +57,6 @@ there is no suite) and `knip.config.js` extending `@crimsonsunset/knip-config` w
 derived `entry`. Existing `knip.json` / `knip.config.*` files are left alone unless
 `--force`.
 
-## PR-Agent (shared OpenRouter key)
-
-`init` also writes `.pr_agent.toml`, `AGENTS.md`, and `.github/review-standards.md`.
-Auto-run is `/review` only: describe, improve, ticket compliance, security
-all-clear, tests checkbox, and effort labels are off (they invent findings to
-fill empty slots). Branch names like `feature/1-auth` are not treated as issue
-`#1`. A clean PR stays silent (`publish_output_no_suggestions = false`).
-`num_max_findings = 10` is a ceiling, not a quota. One
-shared OpenRouter key named **`pr-agent`** is reused across repos as the
-`OPENROUTER__KEY` GitHub Actions secret. The plaintext value lives locally in
-`~/.cursor/secrets.env` as `OPENROUTER_KEY_PR_AGENT` — never commit it, never
-mint a per-repo key.
-
-```bash
-set -a; source ~/.cursor/secrets.env; set +a
-printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY
-```
-
-Per-repo spend shows up in OpenRouter analytics via attribution headers stamped
-from git origin / package.json: `HTTP-Referer`, `X-OpenRouter-Title`, `X-Title`.
-
-### `.pr_agent.toml` must land on the default branch
-
-`review.reusable.yml` sets `PR_AGENT_CONFIG_BRANCH` to
-`${{ github.event.repository.default_branch }}`. Without that env var, the
-[the-pr-agent/pr-agent](https://github.com/the-pr-agent/pr-agent) Action never
-fetches `.pr_agent.toml` from any branch and silently uses the Action's built-in
-defaults (`gpt-5.6` / `gpt-5.6-terra` as of v0.42.0). Reading only the default
-branch is intentional: a PR author cannot hijack model/prompt settings from the
-PR head.
-
-Adoption consequence: the first PR that *introduces* `.pr_agent.toml` still runs
-on Action defaults until that file merges. Merge (or land a tiny config-only PR
-to `main`/`master` first), then expect the configured `model` /
-`fallback_models` to stick. `AGENTS.md` is the same story: `/review` injects it
-from the default branch (500-line cap). Keep `extra_instructions` short.
-
-On the first review PR, comment `/config` and read the dump before trusting the
-output. That shows the live model, flags, and whether the default-branch toml
-actually loaded.
-
 ## Extending shared configs with repo-specific vocabulary
 
 `@crimsonsunset/cspell-config` only ships words genuinely shared across every hub consumer
@@ -114,11 +73,9 @@ vocabulary goes in your own `cspell.json`, which imports the base:
 ## Hub layout
 
 ```
-AGENTS.md                  # PR-Agent /review house rules (default branch)
 .github/
   workflows/
     quality.reusable.yml   # workflow_call — deterministic gates
-    review.reusable.yml    # workflow_call — PR-Agent
     self-test.on-pr.yml    # hub calls itself on PRs
   actions/setup-toolchain/ # optional composite for callers
 packages/
@@ -150,7 +107,7 @@ Every caller workflow must declare `permissions` explicitly:
 ```yaml
 permissions:
   contents: read
-  pull-requests: write # plus issues: write for review.reusable.yml
+  pull-requests: write
 ```
 
 A called workflow can only _narrow_ the caller's token, never widen it. If the

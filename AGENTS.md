@@ -1,7 +1,5 @@
 # Review house rules
 
-PR-Agent `/review` injects this file from the default branch. Keep it short.
-
 - Zero findings is a valid review. Do not invent issues to fill a quota.
 - Only report defects with a concrete failure mode visible in the diff.
 - Do not report JavaScript data races. JS is single-threaded.

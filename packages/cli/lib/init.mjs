@@ -3,11 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildKnipConfig, deriveKnipEntry } from './knip-entry.helpers.mjs';
-import {
-  deriveRepoIdentity,
-  renderPrAgentToml,
-  renderReviewStandards,
-} from './pr-agent-attribution.helpers.mjs';
+import { deriveRepoIdentity, renderReviewStandards } from './repo-identity.helpers.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
@@ -262,7 +258,6 @@ export async function runInit(opts) {
     ['prettierrc.json', '.prettierrc'],
     ['cspell.json', 'cspell.json'],
     ['quality.on-pr.yml', path.join('.github', 'workflows', 'quality.on-pr.yml')],
-    ['review.on-pr.yml', path.join('.github', 'workflows', 'review.on-pr.yml')],
     ['lint.script.mjs', path.join('scripts', 'ci', 'lint.script.mjs')],
     ['test.script.mjs', path.join('scripts', 'ci', 'test.script.mjs')],
     ['prettierignore', '.prettierignore'],
@@ -283,25 +278,11 @@ export async function runInit(opts) {
   }
 
   const identity = deriveRepoIdentity(pkg, opts.cwd);
-  console.log(
-    `pr-agent attribution (${identity.source}): name=${identity.name} url=${identity.url}`,
-  );
-  if (identity.source === 'cwd') {
-    console.log(
-      'note: guessed GitHub URL from package/dir name — edit .pr_agent.toml headers if wrong',
-    );
-  }
-  writeFileSafe(
-    path.join(opts.cwd, '.pr_agent.toml'),
-    renderPrAgentToml(readTemplate('pr_agent.toml'), identity),
-    opts,
-  );
   writeFileSafe(
     path.join(opts.cwd, '.github', 'review-standards.md'),
     renderReviewStandards(readTemplate('review-standards.md'), identity),
     opts,
   );
-  writeFileSafe(path.join(opts.cwd, 'AGENTS.md'), readTemplate('AGENTS.md'), opts);
 
   const knipCandidates = [
     'knip.json',
@@ -343,21 +324,7 @@ Done.
 Next:
   1. ${packageManager === 'pnpm' ? 'pnpm install' : 'npm install'}
   2. Layer any repo-specific ESLint/tsconfig/knip overrides on top of the stubs
-  3. Add OPENROUTER__KEY as a repo secret from the shared OpenRouter key named
-     \`pr-agent\`. Locally it lives in ~/.cursor/secrets.env as
-     OPENROUTER_KEY_PR_AGENT (never commit it). Example:
-       set -a; source ~/.cursor/secrets.env; set +a
-       printf '%s' "$OPENROUTER_KEY_PR_AGENT" | gh secret set OPENROUTER__KEY
-     Attribution headers were stamped in .pr_agent.toml — edit if the guessed
-     name/URL is wrong.
-  4. Layer AGENTS.md with this repo's hard rules (PR-Agent injects it on /review).
-     Keep extra_instructions short. .github/review-standards.md is human docs.
-  5. Merge .pr_agent.toml and AGENTS.md to the default branch before expecting
-     model overrides or house rules. review.reusable.yml reads toml via
-     PR_AGENT_CONFIG_BRANCH=<default branch>; until then PR-Agent silently uses
-     the Action's gpt-5.6 defaults. AGENTS.md is also read from the default branch.
-  6. Open a PR to confirm the sticky quality report + PR-Agent /review fire
-     (describe/improve and ticket/security checkboxes are off on purpose).
-     Comment /config on that PR and read the dump before trusting the review.
+  3. Layer .github/review-standards.md with this repo's hard rules
+  4. Open a PR to confirm the sticky quality report fires
 `);
 }
