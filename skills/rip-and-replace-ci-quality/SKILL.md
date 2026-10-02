@@ -166,7 +166,7 @@ to Cursor accounts. The user picks.
    curl -sS -X POST https://api.cursor.com/bugbot/repo/update \
      -H "Authorization: Bearer $CRIMSONSUNSET_KEY" \
      -H "Content-Type: application/json" \
-     -d "{\"repoUrl\":\"https://github.com/<owner>/<repo>\",\"enabled\":true,\"manualTriggerOnly\":false}"
+     -d "{\"repoUrl\":\"https://github.com/<owner>/<repo>\",\"enabled\":true,\"manualTriggerOnly\":true}"
    ```
 
    This endpoint is documented as a **team admin** API. On Individual Ultra it
@@ -174,8 +174,9 @@ to Cursor accounts. The user picks.
 3. If the API fails, open
    [Bugbot Automations](https://cursor.com/automations/from-cursor/bugbot) and
    tell the user to enable this repo while signed into the chosen account.
-4. First time this account is used for Bugbot: tell them to set **run only once
-   per PR** under that account's Bugbot personal settings (not every push).
+4. First time this account is used for Bugbot: confirm **Trigger Mode** is
+   **Manual Only** (`bugbot run` / `@cursor review`). That is the intended
+   default so reviews are on-demand, not every push.
 5. Layer any extra rules into `.cursor/BUGBOT.md`. `*.mdc` does not apply.
 
 ### 9. Open a PR
