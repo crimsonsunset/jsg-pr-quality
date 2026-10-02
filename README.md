@@ -64,9 +64,10 @@ derived `entry`. Existing `knip.json` / `knip.config.*` files are left alone unl
 job, not the CLI's. Default Bugbot owner is the `crimsonsunset` Cursor account
 (`thecrimsonsunset@gmail.com`). `crimsonsunset/*` repos use that without asking.
 Any other GitHub owner: the skill stops and asks, still recommending
-`crimsonsunset` unless the PR author is a different GitHub user. Set **run only
-once per PR** on that account. Do not enable the same repo on more than one
-account. Do not hop mid-month; overflow is on-demand on the Bugbot owner.
+`crimsonsunset` unless the PR author is a different GitHub user. Trigger mode
+on that account is **Manual Only** (`bugbot run` / `@cursor review`). Do not
+enable the same repo on more than one account. Do not hop mid-month; overflow
+is on-demand on the Bugbot owner.
 
 ## Extending shared configs with repo-specific vocabulary
 
